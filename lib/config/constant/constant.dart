@@ -1,0 +1,1 @@
+ const BASE_URL = "https://cartveg-server.vercel.app/";

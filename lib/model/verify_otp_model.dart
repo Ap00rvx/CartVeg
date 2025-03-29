@@ -52,12 +52,24 @@ class Data {
     };
 }
 
+// To parse this JSON data, do
+//
+//     final user = userFromJson(jsonString);
+
+User userFromJson(String str) => User.fromJson(json.decode(str));
+
+String userToJson(User data) => json.encode(data.toJson());
+
 class User {
     String id;
     String name;
     String email;
     List<dynamic> fcmTokens;
     String phone;
+    String role;
+    bool isActivate;
+    String password;
+    List<dynamic> orders;
     List<dynamic> addresses;
     DateTime createdAt;
     DateTime updatedAt;
@@ -69,6 +81,10 @@ class User {
         required this.email,
         required this.fcmTokens,
         required this.phone,
+        required this.role,
+        required this.isActivate,
+        required this.password,
+        required this.orders,
         required this.addresses,
         required this.createdAt,
         required this.updatedAt,
@@ -81,6 +97,10 @@ class User {
         email: json["email"],
         fcmTokens: List<dynamic>.from(json["fcmTokens"].map((x) => x)),
         phone: json["phone"],
+        role: json["role"],
+        isActivate: json["isActivate"],
+        password: json["password"],
+        orders: List<dynamic>.from(json["orders"].map((x) => x)),
         addresses: List<dynamic>.from(json["addresses"].map((x) => x)),
         createdAt: DateTime.parse(json["createdAt"]),
         updatedAt: DateTime.parse(json["updatedAt"]),
@@ -93,6 +113,10 @@ class User {
         "email": email,
         "fcmTokens": List<dynamic>.from(fcmTokens.map((x) => x)),
         "phone": phone,
+        "role": role,
+        "isActivate": isActivate,
+        "password": password,
+        "orders": List<dynamic>.from(orders.map((x) => x)),
         "addresses": List<dynamic>.from(addresses.map((x) => x)),
         "createdAt": createdAt.toIso8601String(),
         "updatedAt": updatedAt.toIso8601String(),

@@ -40,5 +40,34 @@ class AuthenticationBlocBloc
         emit(AuthenticationBlocFailure("Failed to verify OTP"));
       }
     });
+    on<SaveUserDetailsEvent>((event, emit) async {
+      try {
+        final name = event.name;
+        final email = event.email;
+        final phone = event.phone;
+        emit(AuthenticationBlocLoading());
+        final response =
+            await _authenticationService.saveUserDetails(name, phone, email);
+        response.fold(
+          (errorMessage) => emit(AuthenticationBlocFailure(errorMessage)),
+          (successMessage) => emit(SaveUserDetailsSuccess()),
+        );
+      } catch (err) {
+        emit(AuthenticationBlocFailure("Failed to save user details"));
+      }
+    });
+    on<VerifyTokenEvent>((event, emit) async {
+      try {
+        emit(AuthenticationBlocLoading());
+        final response = await _authenticationService.isTokenValid();
+        if (response) {
+          emit(VerifyTokenSuccess(true));
+        } else {
+          emit(VerifyTokenSuccess(false));
+        }
+      } catch (err) {
+        emit(AuthenticationBlocFailure("Failed to verify token"));
+      }
+    });
   }
 }

@@ -19,8 +19,16 @@ final class VerifyOtpSuccess extends AuthenticationBlocState {
   VerifyOtpSuccess(this.response);
 }
 
+final class SaveUserDetailsSuccess extends AuthenticationBlocState {}
+
 final class AuthenticationBlocFailure extends AuthenticationBlocState {
   final String errorMessage;
 
   AuthenticationBlocFailure(this.errorMessage);
+}
+
+final class VerifyTokenSuccess extends AuthenticationBlocState {
+  final bool response;
+
+  VerifyTokenSuccess(this.response);
 }

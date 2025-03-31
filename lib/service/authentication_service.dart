@@ -12,6 +12,8 @@ class AuthenticationService {
     receiveTimeout: Duration(seconds: 15),
   ));
 
+  late final User? _user;
+
   Future<Either<String, String>> sendOTPToEmail(String email) async {
     try {
       final response =
@@ -65,6 +67,25 @@ class AuthenticationService {
     }
   }
 
+  Future<Either<String, User>> getUserDetails() async {
+    try {
+      final token = await LocalStorageService().getToken();
+      _dio.options.headers["Authorization"] = "Bearer $token";
+      final response = await _dio.get("user/");
+      print(response.data);
+      if (response.statusCode == 200) {
+        final json = response.data;
+        _user = User.fromJson(json["user"]);
+        return right(_user!);
+      }
+
+      return left("Failed to get user details");
+    } catch (err) {
+      print(err);
+      return left("Failed to get user details");
+    }
+  }
+
   Future<bool> isTokenValid() async {
     try {
       final token = await LocalStorageService().getToken();
@@ -82,4 +103,6 @@ class AuthenticationService {
       return false;
     }
   }
+
+  User? get user => _user;
 }

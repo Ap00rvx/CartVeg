@@ -4,10 +4,14 @@ class LocalStorageService {
   final _storage = const FlutterSecureStorage();
   static String TOKEN_KEY = "user_token_ffa";
   Future<void> saveToken(String token) async {
-    await _storage.write(key: TOKEN_KEY, value: token); 
+    await _storage.write(key: TOKEN_KEY, value: token);
   }
+
   Future<String> getToken() async {
-    return await _storage.read(key: TOKEN_KEY) ?? ""; 
+    return await _storage.read(key: TOKEN_KEY) ?? "";
   }
-  
+
+  Future<void> deleteToken() async {
+    return await _storage.delete(key: TOKEN_KEY);
+  }
 }

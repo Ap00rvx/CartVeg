@@ -1,3 +1,6 @@
+import 'package:cart_veg/config/constant/constant.dart';
+import 'package:cart_veg/service/local_storage.dart';
+import 'package:dio/dio.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:permission_handler/permission_handler.dart';
@@ -26,10 +29,16 @@ class NotificationService {
       print("✅ Notification permission granted.");
       String? token = await _getFCMToken();
       print("🔑 FCM Token: $token");
+      if (token != null) {
+        await saveFCMToken(token);
+      } else {
+        print("⚠️ Failed to get FCM Token.");
+      }
     } else if (status.isDenied) {
       print("🚫 Notification permission denied.");
     } else if (status.isPermanentlyDenied) {
-      print("⚠️ Notification permission permanently denied. Redirecting to settings...");
+      print(
+          "⚠️ Notification permission permanently denied. Redirecting to settings...");
       openAppSettings();
     }
   }
@@ -55,7 +64,8 @@ class NotificationService {
   /// **4️⃣ Setup Firebase Listeners**
   Future<void> _setupFirebaseListeners() async {
     FirebaseMessaging.onMessage.listen((RemoteMessage message) {
-      print("📲 Foreground Notification Received: ${message.notification?.title}");
+      print(
+          "📲 Foreground Notification Received: ${message.notification?.title}");
       _showNotification(message);
     });
 
@@ -67,10 +77,10 @@ class NotificationService {
   }
 
   /// **5️⃣ Handle Background Notifications**
-  Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
+  Future<void> _firebaseMessagingBackgroundHandler(
+      RemoteMessage message) async {
     print("⏳ Background Notification Received: ${message.notification?.title}");
     _showNotification(message);
-
   }
 
   /// **6️⃣ Show Notification**
@@ -79,7 +89,8 @@ class NotificationService {
         AndroidNotificationDetails("channel_id", "channel_name",
             importance: Importance.high, priority: Priority.high);
 
-    const NotificationDetails details = NotificationDetails(android: androidDetails);
+    const NotificationDetails details =
+        NotificationDetails(android: androidDetails);
 
     await _localNotifications.show(
       0,
@@ -87,5 +98,29 @@ class NotificationService {
       message.notification?.body ?? "No Body",
       details,
     );
+  }
+
+  final Dio _dio = Dio(BaseOptions(
+    baseUrl: BASE_URL,
+    connectTimeout: const Duration(seconds: 15),
+    receiveTimeout: const Duration(seconds: 15),
+  ));
+  Future<void> saveFCMToken(String fcm) async {
+    final token = await LocalStorageService().getToken();
+    _dio.options.headers["Authorization"] = "Bearer $token";
+
+    try {
+      final response = await _dio.post("user/save-fcm-token", data: {
+        "fcm": fcm,
+      });
+      if (response.statusCode == 200) {
+        print(response.data); 
+      } else {
+        print("🚫 Token not Saved");
+      }
+    } on DioException catch (e) {
+      print(e.response); 
+      print("⚠️ Error saving FCM Token: $e");
+    }
   }
 }

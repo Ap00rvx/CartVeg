@@ -1,4 +1,5 @@
 import 'package:bloc/bloc.dart';
+import 'package:cart_veg/locator.dart';
 import 'package:cart_veg/model/verify_otp_model.dart';
 import 'package:cart_veg/service/authentication_service.dart';
 import 'package:meta/meta.dart';
@@ -14,7 +15,7 @@ class AuthenticationBlocBloc
       try {
         final email = event.email;
         emit(AuthenticationBlocLoading());
-        final response = await _authenticationService.sendOTPToEmail(email);
+        final response = await locator.get<AuthenticationService>().sendOTPToEmail(email);
         response.fold(
           (errorMessage) => emit(AuthenticationBlocFailure(errorMessage)),
           (successMessage) => emit(AuthenticationBlocSuccess(successMessage)),
@@ -31,7 +32,7 @@ class AuthenticationBlocBloc
         final otp = event.otp;
         final email = event.email;
         emit(AuthenticationBlocLoading());
-        final response = await _authenticationService.verifyOTP(otp, email);
+        final response = await locator.get<AuthenticationService>().verifyOTP(otp, email);
         response.fold(
           (errorMessage) => emit(AuthenticationBlocFailure(errorMessage)),
           (succesResponse) => emit(VerifyOtpSuccess(succesResponse)),
@@ -47,7 +48,7 @@ class AuthenticationBlocBloc
         final phone = event.phone;
         emit(AuthenticationBlocLoading());
         final response =
-            await _authenticationService.saveUserDetails(name, phone, email);
+            await locator.get<AuthenticationService>().saveUserDetails(name, phone, email);
         response.fold(
           (errorMessage) => emit(AuthenticationBlocFailure(errorMessage)),
           (successMessage) => emit(SaveUserDetailsSuccess()),
@@ -59,8 +60,11 @@ class AuthenticationBlocBloc
     on<VerifyTokenEvent>((event, emit) async {
       try {
         emit(AuthenticationBlocLoading());
-        final response = await _authenticationService.isTokenValid();
+        final response = await locator.get<AuthenticationService>().isTokenValid();
         if (response) {
+          await locator
+              .get<AuthenticationService>()
+              .getUserDetails();
           emit(VerifyTokenSuccess(true));
         } else {
           emit(VerifyTokenSuccess(false));

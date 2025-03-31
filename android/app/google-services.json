@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "459352336986",
+    "project_id": "cartveg-c339b",
+    "storage_bucket": "cartveg-c339b.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:459352336986:android:ff3b04b8398e7b3b3f4663",
+        "android_client_info": {
+          "package_name": "com.cartveg.cart_veg"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDSYLYlXkLgo57HKqB2Hl3ySMmGM24-D-0"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

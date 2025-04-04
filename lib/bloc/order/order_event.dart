@@ -12,9 +12,12 @@ class CreateOrderEvent extends OrderEvent {
   final Map<String, dynamic> deliveryAddress;
   final bool isCashOnDelivery;
   final List<Map<String, dynamic>> products;
+  final int shippingAmount; 
   const CreateOrderEvent(
       {required this.deliveryAddress,
       required this.phone,
       required this.isCashOnDelivery,
-      required this.products});
+      required this.products,
+      required this.shippingAmount
+      });
 }

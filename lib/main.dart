@@ -1,10 +1,12 @@
 import 'package:cart_veg/bloc/auth/authentication_bloc_bloc.dart';
 import 'package:cart_veg/bloc/cart/cart_bloc.dart';
 import 'package:cart_veg/bloc/categories/category_bloc.dart';
+import 'package:cart_veg/bloc/category_page/category_bloc.dart';
 import 'package:cart_veg/bloc/order/order_bloc.dart';
 import 'package:cart_veg/bloc/product/product_bloc.dart';
 import 'package:cart_veg/bloc/productIds/product_ids_bloc.dart';
 import 'package:cart_veg/bloc/search/search_bloc.dart';
+import 'package:cart_veg/bloc/user_order/user_order_bloc.dart';
 import 'package:cart_veg/config/router/app_router.dart';
 import 'package:cart_veg/firebase_options.dart';
 import 'package:cart_veg/locator.dart';
@@ -46,7 +48,10 @@ class RootApp extends StatelessWidget {
           create:(context)  => OrderBloc()),
         BlocProvider(
           create:(context)  => ProductIdsBloc()),
-
+        BlocProvider(
+          create:(context)  => CategoryPageBloc()),
+        BlocProvider(
+          create:(context)  => UserOrderBloc()),
       ],
       child: MaterialApp.router(
         theme: ThemeData(

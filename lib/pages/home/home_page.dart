@@ -2,6 +2,7 @@ import 'package:cart_veg/bloc/cart/cart_bloc.dart';
 import 'package:cart_veg/bloc/search/search_bloc.dart';
 import 'package:cart_veg/locator.dart';
 import 'package:cart_veg/pages/cart/cart_page.dart';
+import 'package:cart_veg/pages/category/category_page.dart';
 import 'package:cart_veg/pages/home/widgets/home_content.dart';
 import 'package:badges/badges.dart' as badges;
 import 'package:cart_veg/pages/profile/profile_page.dart';
@@ -22,9 +23,9 @@ class _HomePageState extends State<HomePage> {
   // List of pages to be shown in the IndexedStack
   final List<Widget> _pages = [
     const HomeContent(),
-    const CategoryPage(),
+    const CategoryContent(),
     const CartPage(),
-    ProfilePage()
+    const ProfilePage()
   ];
 
  late SearchBloc _searchBloc;
@@ -141,15 +142,3 @@ class _HomePageState extends State<HomePage> {
     );
   }
 }
-
-class CategoryPage extends StatelessWidget {
-  const CategoryPage({Key? key}) : super(key: key);
-
-  @override
-  Widget build(BuildContext context) {
-    return const Center(
-      child: Text('Category Content'),
-    );
-  }
-}
-

@@ -16,13 +16,14 @@ class OrderService {
       String phone,
       Map<String, dynamic> deliveryAddress,
       bool isCashOnDelivery,
-      List<Map<String, dynamic>> products) async {
+      List<Map<String, dynamic>> products, int shipp) async {
     final userId = locator.get<AuthenticationService>().user!.id;
     try {
       final data = {
         "userId": userId,
         "phone": phone,
         "products": products,
+        "shippingAmount": shipp,
         "isCashOnDelivery": isCashOnDelivery,
         "deliveryAddress": deliveryAddress
       };

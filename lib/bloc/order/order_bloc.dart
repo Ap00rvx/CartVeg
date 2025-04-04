@@ -16,10 +16,11 @@ class OrderBloc extends Bloc<OrderEvent, OrderState> {
       final deliveryAddress = event.deliveryAddress;
       final bool isCashOnDelivery = event.isCashOnDelivery;
       final products = event.products;
+      final shippingAmount = event.shippingAmount;  
       emit(OrderLoading());
       try {
         final response = await orderService.handleCreateOrder(
-            phone, deliveryAddress, isCashOnDelivery, products);
+            phone, deliveryAddress, isCashOnDelivery, products , shippingAmount);
         response.fold(
           (error) {
             emit(OrderError(errorMessage: error));

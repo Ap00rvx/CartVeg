@@ -1,34 +1,31 @@
 import 'package:cart_veg/bloc/cart/cart_bloc.dart';
-import 'package:cart_veg/bloc/product/product_bloc.dart';
-import 'package:cart_veg/bloc/productIds/product_ids_bloc.dart';
+import 'package:cart_veg/bloc/category_page/category_bloc.dart';
 import 'package:cart_veg/locator.dart';
-import 'package:cart_veg/pages/home/widgets/search_bar.dart';
-import 'package:cart_veg/service/authentication_service.dart';
 import 'package:cart_veg/model/product_model.dart';
+import 'package:cart_veg/service/authentication_service.dart';
 import 'package:cart_veg/widgets/button_style.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:lottie/lottie.dart';
 import 'package:shimmer/shimmer.dart';
 
-class HomeContent extends StatefulWidget {
-  const HomeContent({super.key});
+class CategoryContent extends StatefulWidget {
+  const CategoryContent({super.key});
 
   @override
-  State<HomeContent> createState() => _HomeContentState();
+  State<CategoryContent> createState() => _CategoryContentState();
 }
 
-class _HomeContentState extends State<HomeContent> {
+class _CategoryContentState extends State<CategoryContent> {
   final user = locator.get<AuthenticationService>().user;
   final ScrollController _scrollController = ScrollController();
-  late ProductBloc _productBloc;
-
+  late CategoryPageBloc _categoryPageBloc;
   late CartBloc _cartBloc;
 
   @override
   void initState() {
     super.initState();
-    _productBloc = locator<ProductBloc>()
-      ..add(const LoadProducts(category: ""));
+    _categoryPageBloc = locator<CategoryPageBloc>()..add(FetchInitialData());
     _cartBloc = locator<CartBloc>()..add(CartStarted());
     _scrollController.addListener(_onScroll);
   }
@@ -43,11 +40,9 @@ class _HomeContentState extends State<HomeContent> {
   void _onScroll() {
     if (_scrollController.position.pixels >=
         _scrollController.position.maxScrollExtent - 200) {
-      final state = _productBloc.state;
-      if (state is ProductsLoaded && state.hasMore && !state.isLoadingMore) {
-        print(
-            "Triggering LoadMoreProducts at Scroll Position: ${_scrollController.position.pixels}");
-        _productBloc.add(const LoadMoreProducts(category: ""));
+      final state = _categoryPageBloc.state;
+      if (state is CategoryLoaded && state.hasMoreData && !state.isLoading) {
+        _categoryPageBloc.add(LoadMoreProducts(state.selectedCategory));
       }
     }
   }
@@ -56,12 +51,13 @@ class _HomeContentState extends State<HomeContent> {
   Widget build(BuildContext context) {
     return MultiBlocProvider(
       providers: [
-        BlocProvider<ProductBloc>.value(value: _productBloc),
+        BlocProvider<CategoryPageBloc>.value(value: _categoryPageBloc),
+        BlocProvider<CartBloc>.value(value: _cartBloc),
       ],
       child: Scaffold(
         backgroundColor: Colors.white,
         appBar: AppBar(
-          backgroundColor: Colors.green.shade100,
+          backgroundColor: Colors.white,
           toolbarHeight: 80,
           title: Column(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -95,83 +91,128 @@ class _HomeContentState extends State<HomeContent> {
         ),
         body: RefreshIndicator(
           onRefresh: () async {
-            _productBloc.add(const LoadProducts(category: ""));
-
-            context.read<ProductIdsBloc>().add(ProductIdsFetchEvent());
-
+            final currentState = _categoryPageBloc.state;
+            String currentCategory = "Vegetable";
+            if (currentState is CategoryLoaded) {
+              currentCategory = currentState.selectedCategory;
+            }
+            _categoryPageBloc.add(RefreshProducts(currentCategory));
             _cartBloc.add(CartStarted());
           },
-          child: SingleChildScrollView(
-            controller: _scrollController,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(20),
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [
-                        Colors.green.shade100,
-                        Colors.green.shade300,
-                      ],
-                      begin: Alignment.topCenter,
-                      end: Alignment.bottomCenter,
-                    ),
-                    borderRadius: const BorderRadius.only(
-                      bottomLeft: Radius.circular(20),
-                      bottomRight: Radius.circular(20),
-                    ),
-                  ),
-                  child: const Column(
-                    children: [
-                      const SizedBox(height: 20),
-                      const ProductSearchBar(),
-                    ],
-                  ),
-                ),
-                Padding(
-                  padding: const EdgeInsets.all(8.0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const SizedBox(height: 20),
-                      // create a demo flyer card
-                      gi
-                      const Text(
-                        "Popular Items",
-                        style: TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      const SizedBox(height: 10),
-                      BlocBuilder<ProductBloc, ProductState>(
-                        builder: (context, state) {
-                          if (state is ProductInitial ||
-                              state is ProductLoading) {
-                            return _buildLoadingShimmer();
-                          } else if (state is ProductsLoaded) {
-                            return _buildProductGrid(state.products,
-                                state.hasMore, state.isLoadingMore);
-                          } else if (state is ProductError) {
-                            return _buildErrorState(state.message);
-                          }
-                          return const Center(child: Text('Unexpected state'));
-                        },
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
+          child: Column(
+            children: [
+              _buildSidebar(),
+              Expanded(child: _buildProductSection()),
+            ],
           ),
         ),
       ),
     );
   }
 
+  Widget _buildSidebar() {
+    return BlocBuilder<CategoryPageBloc, CategoryState>(
+      builder: (context, state) {
+        return Container(
+          height: 60,
+          color: Colors.white,
+          padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
+          child: state.categories.isEmpty
+              ? const Center(child: CircularProgressIndicator())
+              : ListView.separated(
+                  scrollDirection: Axis.horizontal,
+                  itemCount: state.categories.length,
+                  separatorBuilder: (context, index) =>
+                      const SizedBox(width: 8.0),
+                  itemBuilder: (context, index) {
+                    final category = state.categories[index];
+                    final isSelected = state is CategoryLoaded &&
+                        state.selectedCategory == category;
+                    return ChoiceChip(
+                      label: Text(category),
+                      selected: isSelected,
+                      onSelected: (selected) {
+                        if (selected) {
+                          context
+                              .read<CategoryPageBloc>()
+                              .add(RefreshProducts(category));
+                        }
+                      },
+                      selectedColor: Colors.green.withOpacity(0.2),
+                      backgroundColor: Colors.grey[100],
+                      labelStyle: TextStyle(
+                        color: isSelected ? Colors.green : Colors.black,
+                        fontWeight:
+                            isSelected ? FontWeight.bold : FontWeight.normal,
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(20),
+                        side: BorderSide(
+                          color: isSelected ? Colors.green : Colors.grey,
+                          width: 1,
+                        ),
+                      ),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 12, vertical: 8),
+                    );
+                  },
+                ),
+        );
+      },
+    );
+  }
+
+  Widget _buildProductSection() {
+    return SingleChildScrollView(
+      controller: _scrollController,
+      padding: const EdgeInsets.all(16.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const SizedBox(height: 20),
+          BlocBuilder<CategoryPageBloc, CategoryState>(
+            builder: (context, state) {
+              if (state is CategoryInitial ||
+                  (state is CategoryLoading && state.products.isEmpty)) {
+                return _buildLoadingShimmer();
+              } else if (state is CategoryLoading &&
+                  state.products.isNotEmpty) {
+                // Handle pagination loading state
+                return _buildProductGrid(state.products, true, true);
+              } else if (state is CategoryLoaded) {
+                return _buildProductGrid(
+                    state.products, state.hasMoreData, state.isLoading);
+              } else if (state is CategoryError) {
+                return _buildErrorState(state.error);
+              }
+              return const Center(child: Text("No products available."));
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildProductGrid(
-      List<Product> products, bool hasMore, bool isLoadingMore) {
+      List<Product> products, bool hasMore, bool isLoading) {
+    if (products.isEmpty && !isLoading) {
+      return SizedBox(
+        height: MediaQuery.sizeOf(context).height * 0.5,
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Center(
+              child: SizedBox(
+                  height: 200, child: Lottie.asset("assets/empty.json")),
+            ),
+            const Text(
+              "Seems like no Product is Available for this section :(",
+              style: TextStyle(fontSize: 12),
+            )
+          ],
+        ),
+      );
+    }
     return GridView.builder(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
@@ -181,12 +222,11 @@ class _HomeContentState extends State<HomeContent> {
         crossAxisSpacing: 10,
         mainAxisSpacing: 10,
       ),
-      itemCount: products.length + (hasMore ? 1 : 0),
+      itemCount: products.length + (hasMore && isLoading ? 1 : 0),
       itemBuilder: (context, index) {
-        if (index == products.length) {
+        if (index == products.length && hasMore && isLoading) {
           return _buildLoadingIndicator();
         }
-
         final product = products[index];
         return _buildProductCard(product);
       },
@@ -221,43 +261,52 @@ class _HomeContentState extends State<HomeContent> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(product.name,
-                      style: const TextStyle(
-                          fontSize: 12, fontWeight: FontWeight.bold)),
+                  Text(
+                    product.name,
+                    style: const TextStyle(
+                        fontSize: 12, fontWeight: FontWeight.bold),
+                  ),
                   const SizedBox(height: 4),
                   Row(
                     children: [
                       Visibility(
                         visible: product.actualPrice != product.price,
-                        child: Text("₹${product.actualPrice}",
-                            style: const TextStyle(
-                                fontSize: 12,
-                                color: Colors.grey,
-                                decoration: TextDecoration.lineThrough)),
+                        child: Text(
+                          "₹${product.actualPrice}",
+                          style: const TextStyle(
+                            fontSize: 12,
+                            color: Colors.grey,
+                            decoration: TextDecoration.lineThrough,
+                          ),
+                        ),
                       ),
                       const SizedBox(width: 4),
-                      Text("₹${product.price}",
-                          style: const TextStyle(
-                              fontSize: 14, color: Colors.green)),
+                      Text(
+                        "₹${product.price}",
+                        style:
+                            const TextStyle(fontSize: 14, color: Colors.green),
+                      ),
                     ],
                   ),
                   const SizedBox(height: 4),
                   if (product.stock - product.threshold <= 5)
-                    const Text("Low Stock",
-                        style: TextStyle(
-                            fontSize: 12,
-                            color: Colors.red,
-                            fontWeight: FontWeight.bold)),
+                    const Text(
+                      "Low Stock",
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.red,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
                   BlocBuilder<CartBloc, CartState>(
                     builder: (context, state) {
                       if (state is CartLoaded) {
                         final inCart = state.cart.items
                             .any((item) => item.product.id == product.id);
-
                         if (inCart) {
                           final cartItem = state.cart.items.firstWhere(
-                              (item) => item.product.id == product.id);
-
+                            (item) => item.product.id == product.id,
+                          );
                           return Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
@@ -283,8 +332,7 @@ class _HomeContentState extends State<HomeContent> {
                               Text(
                                 '${cartItem.quantity}',
                                 style: const TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                ),
+                                    fontWeight: FontWeight.bold),
                               ),
                               InkWell(
                                 onTap: () {
@@ -292,17 +340,16 @@ class _HomeContentState extends State<HomeContent> {
                                       cartItem.quantity + 1) {
                                     ScaffoldMessenger.of(context).showSnackBar(
                                       SnackBar(
-                                        content:
-                                            const Text('Stock limit reached',
-                                                style: TextStyle(
-                                                  fontSize: 16,
-                                                  color: Colors.black,
-                                                )),
+                                        content: const Text(
+                                          'Stock limit reached',
+                                          style: TextStyle(
+                                              fontSize: 16,
+                                              color: Colors.black),
+                                        ),
                                         duration: const Duration(seconds: 1),
                                         backgroundColor: Colors.red.shade100,
                                       ),
                                     );
-
                                     return;
                                   }
                                   context
@@ -329,17 +376,17 @@ class _HomeContentState extends State<HomeContent> {
                           );
                         }
                       }
-
                       return ElevatedButton(
                         onPressed: () {
                           context.read<CartBloc>().add(CartItemAdded(product));
+                          context.read<CartBloc>().add(CartStarted());
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(
-                              content: Text('${product.name} added to cart',
-                                  style: const TextStyle(
-                                    fontSize: 16,
-                                    color: Colors.black,
-                                  )),
+                              content: Text(
+                                '${product.name} added to cart',
+                                style: const TextStyle(
+                                    fontSize: 16, color: Colors.black),
+                              ),
                               duration: const Duration(seconds: 1),
                               backgroundColor: Colors.green.shade100,
                             ),
@@ -374,82 +421,52 @@ class _HomeContentState extends State<HomeContent> {
         crossAxisSpacing: 10,
         mainAxisSpacing: 10,
       ),
-      itemCount: 6, // Show 6 shimmer placeholders
+      itemCount: 6,
       itemBuilder: (context, index) {
         return Shimmer.fromColors(
-            baseColor: Colors.grey.shade100,
-            highlightColor: Colors.white,
-            child: Container(
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Column(
-                children: [
-                  Expanded(
-                    child: Container(
-                      decoration: BoxDecoration(
-                        color: Colors.grey.shade300,
-                        borderRadius: BorderRadius.circular(10),
-                      ),
+          baseColor: Colors.grey.shade100,
+          highlightColor: Colors.white,
+          child: Container(
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Column(
+              children: [
+                Expanded(
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade300,
+                      borderRadius: BorderRadius.circular(10),
                     ),
                   ),
-                  const SizedBox(height: 8),
-                  Container(
-                    height: 20,
-                    width: double.infinity,
-                    color: Colors.grey.shade300,
-                  ),
-                  const SizedBox(height: 4),
-                  Container(
-                    height: 20,
-                    width: double.infinity,
-                    color: Colors.grey.shade300,
-                  ),
-                ],
-              ),
-            ));
+                ),
+                const SizedBox(height: 8),
+                Container(
+                  height: 20,
+                  width: double.infinity,
+                  color: Colors.grey.shade300,
+                ),
+                const SizedBox(height: 4),
+                Container(
+                  height: 20,
+                  width: double.infinity,
+                  color: Colors.grey.shade300,
+                ),
+              ],
+            ),
+          ),
+        );
       },
     );
   }
 
   Widget _buildLoadingIndicator() {
-    return Center(
+    return const Center(
       child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Shimmer.fromColors(
-              baseColor: Colors.grey.shade100,
-              highlightColor: Colors.white,
-              child: Container(
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Column(
-                  children: [
-                    Expanded(
-                      child: Container(
-                        decoration: BoxDecoration(
-                          color: Colors.grey.shade300,
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Container(
-                      height: 20,
-                      width: double.infinity,
-                      color: Colors.grey.shade300,
-                    ),
-                    const SizedBox(height: 4),
-                    Container(
-                      height: 20,
-                      width: double.infinity,
-                      color: Colors.grey.shade300,
-                    ),
-                  ],
-                ),
-              ))),
+        padding: EdgeInsets.all(16.0),
+        child: CircularProgressIndicator(),
+      ),
     );
   }
 
@@ -460,13 +477,20 @@ class _HomeContentState extends State<HomeContent> {
         children: [
           const Icon(Icons.error_outline, size: 48, color: Colors.red),
           const SizedBox(height: 16),
-          Text(message,
-              style: const TextStyle(fontSize: 16),
-              textAlign: TextAlign.center),
+          Text(
+            message,
+            style: const TextStyle(fontSize: 16),
+            textAlign: TextAlign.center,
+          ),
           const SizedBox(height: 16),
           ElevatedButton(
             onPressed: () {
-              _productBloc.add(const LoadProducts(category: ""));
+              final currentState = _categoryPageBloc.state;
+              String currentCategory = "Vegetable";
+              if (currentState is CategoryLoaded) {
+                currentCategory = currentState.selectedCategory;
+              }
+              _categoryPageBloc.add(RefreshProducts(currentCategory));
             },
             child: const Text('Try Again'),
           ),

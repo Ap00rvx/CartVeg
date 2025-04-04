@@ -643,7 +643,11 @@ class _CheckoutPageState extends State<CheckoutPage> {
                                   phone: _phoneController.text,
                                   deliveryAddress: address,
                                   isCashOnDelivery: true,
-                                  products: products, // Only available products
+                                  products: products,
+                                  shippingAmount:
+                                      shipping.toInt(), // Shipping amount
+
+                                  // Only available products
                                 ),
                               );
                           context.pushNamed(Routes.createOrder);

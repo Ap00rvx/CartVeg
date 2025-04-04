@@ -1,6 +1,12 @@
+import 'package:cart_veg/bloc/cart/cart_bloc.dart';
+import 'package:cart_veg/bloc/search/search_bloc.dart';
+import 'package:cart_veg/locator.dart';
+import 'package:cart_veg/pages/cart/cart_page.dart';
 import 'package:cart_veg/pages/home/widgets/home_content.dart';
-import 'package:cart_veg/service/notification_service.dart';
+import 'package:badges/badges.dart' as badges;
+import 'package:cart_veg/pages/profile/profile_page.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:iconsax/iconsax.dart'; // Import the Iconsax package
 
 class HomePage extends StatefulWidget {
@@ -18,15 +24,16 @@ class _HomePageState extends State<HomePage> {
     const HomeContent(),
     const CategoryPage(),
     const CartPage(),
-    const ProfilePage(),
+    ProfilePage()
   ];
 
+ late SearchBloc _searchBloc;
   @override
   void initState() {
     super.initState();
-    // NotificationService().init().then((_) {
-    //   print("Notification Service Initialized");
-    // });
+     // Fetch products when the app starts
+     _searchBloc = context.read<SearchBloc>(); 
+    _searchBloc.add(FetchSearchProducts());
   }
 
   void _onItemTapped(int index) {
@@ -55,27 +62,75 @@ class _HomePageState extends State<HomePage> {
         child: BottomNavigationBar(
           currentIndex: _selectedIndex,
           onTap: _onItemTapped,
-          selectedItemColor: Theme.of(context).primaryColor,
+          selectedItemColor: Colors.green.shade900,
           unselectedItemColor: Colors.grey,
           type: BottomNavigationBarType.fixed,
           elevation: 8,
-          items: const [
-            BottomNavigationBarItem(
+          items: [
+            const BottomNavigationBarItem(
               icon: Icon(Iconsax.home),
               activeIcon: Icon(Iconsax.home_15),
               label: 'Home',
             ),
-            BottomNavigationBarItem(
+            const BottomNavigationBarItem(
               icon: Icon(Iconsax.category),
               activeIcon: Icon(Iconsax.category5),
               label: 'Categories',
             ),
             BottomNavigationBarItem(
-              icon: Icon(Iconsax.shopping_cart),
-              activeIcon: Icon(Iconsax.shopping_cart5),
+              icon: BlocBuilder<CartBloc, CartState>(
+                builder: (context, state) {
+                  int itemCount = 0;
+                  if (state is CartLoaded) {
+                    itemCount = state.cart.totalItems;
+                  }
+
+                  return itemCount > 0
+                      ? badges.Badge(
+                          badgeContent: itemCount > 0
+                              ? Text(
+                                  '$itemCount',
+                                  style: const TextStyle(
+                                      color: Colors.white, fontSize: 12),
+                                )
+                              : null, // Hide badge if count is 0
+                          badgeStyle: const badges.BadgeStyle(
+                            badgeColor: Colors.grey,
+                            padding: EdgeInsets.all(6),
+                          ),
+                          child: const Icon(Iconsax.shopping_cart),
+                        )
+                      : const Icon(Iconsax.shopping_cart);
+                },
+              ),
+              activeIcon: BlocBuilder<CartBloc, CartState>(
+                builder: (context, state) {
+                  int itemCount = 0;
+                  if (state is CartLoaded) {
+                    itemCount = state.cart.totalItems;
+                  }
+
+                  return itemCount > 0
+                      ? badges.Badge(
+                          badgeContent: itemCount > 0
+                              ? Text(
+                                  '$itemCount',
+                                  style: const TextStyle(
+                                      color: Colors.white, fontSize: 12),
+                                )
+                              : null, // Hide badge if count is 0
+                          badgeStyle: badges.BadgeStyle(
+                            badgeColor: Colors.green.shade900,
+                            padding: EdgeInsets.all(6),
+                          ),
+                          child: const Icon(Iconsax.shopping_cart),
+                        )
+                      : const Icon(Iconsax.shopping_cart);
+                },
+              ),
               label: 'Cart',
             ),
-            BottomNavigationBarItem(
+            const BottomNavigationBarItem(
               icon: Icon(Iconsax.profile_circle),
               activeIcon: Icon(Iconsax.profile_circle5),
               label: 'Profile',
@@ -86,8 +141,6 @@ class _HomePageState extends State<HomePage> {
     );
   }
 }
-
-
 
 class CategoryPage extends StatelessWidget {
   const CategoryPage({Key? key}) : super(key: key);
@@ -100,24 +153,3 @@ class CategoryPage extends StatelessWidget {
   }
 }
 
-class CartPage extends StatelessWidget {
-  const CartPage({Key? key}) : super(key: key);
-
-  @override
-  Widget build(BuildContext context) {
-    return const Center(
-      child: Text('Cart Content'),
-    );
-  }
-}
-
-class ProfilePage extends StatelessWidget {
-  const ProfilePage({Key? key}) : super(key: key);
-
-  @override
-  Widget build(BuildContext context) {
-    return const Center(
-      child: Text('Profile Content'),
-    );
-  }
-}

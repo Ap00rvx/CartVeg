@@ -81,7 +81,7 @@ class AuthenticationService {
 
       return left("Failed to get user details");
     } catch (err) {
-      print(err);
+      print("rrroror -> " + err.toString());
       return left("Failed to get user details");
     }
   }

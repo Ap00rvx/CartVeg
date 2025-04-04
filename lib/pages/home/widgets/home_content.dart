@@ -1,14 +1,17 @@
+import 'package:cart_veg/bloc/cart/cart_bloc.dart';
 import 'package:cart_veg/bloc/product/product_bloc.dart';
+import 'package:cart_veg/bloc/productIds/product_ids_bloc.dart';
 import 'package:cart_veg/locator.dart';
 import 'package:cart_veg/pages/home/widgets/search_bar.dart';
 import 'package:cart_veg/service/authentication_service.dart';
 import 'package:cart_veg/model/product_model.dart';
+import 'package:cart_veg/widgets/button_style.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:shimmer/shimmer.dart';
 
 class HomeContent extends StatefulWidget {
-  const HomeContent({Key? key}) : super(key: key);
+  const HomeContent({super.key});
 
   @override
   State<HomeContent> createState() => _HomeContentState();
@@ -19,10 +22,14 @@ class _HomeContentState extends State<HomeContent> {
   final ScrollController _scrollController = ScrollController();
   late ProductBloc _productBloc;
 
+  late CartBloc _cartBloc;
+
   @override
   void initState() {
     super.initState();
-    _productBloc = locator<ProductBloc>()..add(LoadProducts(category: ""));
+    _productBloc = locator<ProductBloc>()
+      ..add(const LoadProducts(category: ""));
+    _cartBloc = locator<CartBloc>()..add(CartStarted());
     _scrollController.addListener(_onScroll);
   }
 
@@ -40,15 +47,17 @@ class _HomeContentState extends State<HomeContent> {
       if (state is ProductsLoaded && state.hasMore && !state.isLoadingMore) {
         print(
             "Triggering LoadMoreProducts at Scroll Position: ${_scrollController.position.pixels}");
-        _productBloc.add(LoadMoreProducts(category: ""));
+        _productBloc.add(const LoadMoreProducts(category: ""));
       }
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    return BlocProvider.value(
-      value: _productBloc,
+    return MultiBlocProvider(
+      providers: [
+        BlocProvider<ProductBloc>.value(value: _productBloc),
+      ],
       child: Scaffold(
         backgroundColor: Colors.white,
         appBar: AppBar(
@@ -85,7 +94,13 @@ class _HomeContentState extends State<HomeContent> {
           ],
         ),
         body: RefreshIndicator(
-          onRefresh: () async {},
+          onRefresh: () async {
+            _productBloc.add(const LoadProducts(category: ""));
+            
+            context.read<ProductIdsBloc>().add(ProductIdsFetchEvent());
+
+  _cartBloc.add(CartStarted());
+          },
           child: SingleChildScrollView(
             controller: _scrollController,
             padding: const EdgeInsets.all(16.0),
@@ -189,6 +204,7 @@ class _HomeContentState extends State<HomeContent> {
                                 color: Colors.grey,
                                 decoration: TextDecoration.lineThrough)),
                       ),
+                      const SizedBox(width: 4),
                       Text("₹${product.price}",
                           style: const TextStyle(
                               fontSize: 14, color: Colors.green)),
@@ -201,6 +217,113 @@ class _HomeContentState extends State<HomeContent> {
                             fontSize: 12,
                             color: Colors.red,
                             fontWeight: FontWeight.bold)),
+                  BlocBuilder<CartBloc, CartState>(
+                    builder: (context, state) {
+                      if (state is CartLoaded) {
+                        final inCart = state.cart.items
+                            .any((item) => item.product.id == product.id);
+
+                        if (inCart) {
+                          final cartItem = state.cart.items.firstWhere(
+                              (item) => item.product.id == product.id);
+
+                          return Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              InkWell(
+                                onTap: () {
+                                  context
+                                      .read<CartBloc>()
+                                      .add(CartItemRemoved(product.id));
+                                },
+                                child: Container(
+                                  padding: const EdgeInsets.all(4),
+                                  decoration: BoxDecoration(
+                                    color: Colors.green,
+                                    borderRadius: BorderRadius.circular(4),
+                                  ),
+                                  child: const Icon(
+                                    Icons.remove,
+                                    color: Colors.white,
+                                    size: 18,
+                                  ),
+                                ),
+                              ),
+                              Text(
+                                '${cartItem.quantity}',
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              InkWell(
+                                onTap: () {
+                                  if (product.stock - product.threshold <
+                                      cartItem.quantity + 1) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                        content:
+                                            const Text('Stock limit reached',
+                                                style: TextStyle(
+                                                  fontSize: 16,
+                                                  color: Colors.black,
+                                                )),
+                                        duration: const Duration(seconds: 1),
+                                        backgroundColor: Colors.red.shade100,
+                                      ),
+                                    );
+
+                                    return;
+                                  }
+                                  context
+                                      .read<CartBloc>()
+                                      .add(CartItemAdded(product));
+                                },
+                                child: Container(
+                                  padding: const EdgeInsets.all(4),
+                                  decoration: BoxDecoration(
+                                    color: product.stock - product.threshold <
+                                            cartItem.quantity + 1
+                                        ? Colors.grey
+                                        : Colors.green,
+                                    borderRadius: BorderRadius.circular(4),
+                                  ),
+                                  child: const Icon(
+                                    Icons.add,
+                                    color: Colors.white,
+                                    size: 18,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          );
+                        }
+                      }
+
+                      return ElevatedButton(
+                        onPressed: () {
+                          context.read<CartBloc>().add(CartItemAdded(product));
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text('${product.name} added to cart',
+                                  style: const TextStyle(
+                                    fontSize: 16,
+                                    color: Colors.black,
+                                  )),
+                              duration: const Duration(seconds: 1),
+                              backgroundColor: Colors.green.shade100,
+                            ),
+                          );
+                        },
+                        style: greenButtonStyle.copyWith(
+                          minimumSize: const WidgetStatePropertyAll(
+                              Size(double.maxFinite, 40)),
+                          foregroundColor:
+                              const WidgetStatePropertyAll(Colors.white),
+                        ),
+                        child: const Text("Add to Cart"),
+                      );
+                    },
+                  ),
                 ],
               ),
             ),
@@ -223,6 +346,8 @@ class _HomeContentState extends State<HomeContent> {
       itemCount: 6, // Show 6 shimmer placeholders
       itemBuilder: (context, index) {
         return Shimmer.fromColors(
+            baseColor: Colors.grey.shade100,
+            highlightColor: Colors.white,
             child: Container(
               decoration: BoxDecoration(
                 color: Colors.white,
@@ -252,19 +377,48 @@ class _HomeContentState extends State<HomeContent> {
                   ),
                 ],
               ),
-            ),
-            baseColor: Colors.grey.shade100,
-            highlightColor: Colors.white);
+            ));
       },
     );
   }
 
   Widget _buildLoadingIndicator() {
-    return const Center(
+    return Center(
       child: Padding(
-        padding: EdgeInsets.all(16.0),
-        child: CircularProgressIndicator(),
-      ),
+          padding: const EdgeInsets.all(16.0),
+          child: Shimmer.fromColors(
+              baseColor: Colors.grey.shade100,
+              highlightColor: Colors.white,
+              child: Container(
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Column(
+                  children: [
+                    Expanded(
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: Colors.grey.shade300,
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Container(
+                      height: 20,
+                      width: double.infinity,
+                      color: Colors.grey.shade300,
+                    ),
+                    const SizedBox(height: 4),
+                    Container(
+                      height: 20,
+                      width: double.infinity,
+                      color: Colors.grey.shade300,
+                    ),
+                  ],
+                ),
+              ))),
     );
   }
 
@@ -281,7 +435,7 @@ class _HomeContentState extends State<HomeContent> {
           const SizedBox(height: 16),
           ElevatedButton(
             onPressed: () {
-              _productBloc.add(LoadProducts(category: ""));
+              _productBloc.add(const LoadProducts(category: ""));
             },
             child: const Text('Try Again'),
           ),

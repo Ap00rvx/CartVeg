@@ -1,3 +1,6 @@
+import 'dart:convert';
+
+import 'package:cart_veg/bloc/invoice/invoice_bloc.dart';
 import 'package:cart_veg/bloc/user_order/user_order_bloc.dart';
 import 'package:cart_veg/config/router/app_router.dart';
 import 'package:cart_veg/config/router/route_names.dart';
@@ -5,6 +8,7 @@ import 'package:cart_veg/locator.dart';
 import 'package:cart_veg/model/user_order_model.dart';
 import 'package:cart_veg/pages/checkout/checkout_page.dart';
 import 'package:cart_veg/service/authentication_service.dart';
+import 'package:cart_veg/service/invoice_generator.dart';
 import 'package:cart_veg/service/local_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -104,202 +108,252 @@ class _ProfilePageState extends State<ProfilePage> {
           context.read<UserOrderBloc>().add(FetchUserOrders(user.id));
           setState(() {}); // Update UI after refresh
         },
-        child: SingleChildScrollView(
-          child: Column(
-            children: [
-              Container(
-                width: double.infinity,
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 20, vertical: 30),
-                decoration: const BoxDecoration(
-                  color: Colors.green,
-                  borderRadius: BorderRadius.only(
-                    bottomLeft: Radius.circular(20),
-                    bottomRight: Radius.circular(20),
+        child: BlocListener<InvoiceBloc, InvoiceState>(
+          listener: (context, state) async {
+            if (state is InvoiceLoaded) {
+              final invoiceGenerator = InvoiceGenerator(
+                  jsonData: jsonEncode(state.invoice.toJson()));
+
+              final pdfFile = await invoiceGenerator.generateInvoice();
+
+              // Parse JSON to get invoice ID
+              final Map<String, dynamic> invoiceData = state.invoice.toJson();
+              final invoiceId = invoiceData['invoiceId'];
+
+              // Close loading dialog
+              Navigator.pop(context);
+
+              // Navigate to PDF viewer
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => PDFViewerScreen(
+                    pdfFile: pdfFile,
+                    invoiceId: invoiceId,
                   ),
                 ),
-                child: Column(
-                  children: [
-                    CircleAvatar(
-                      radius: 50,
-                      backgroundColor: Colors.white,
-                      child: Icon(Icons.person,
-                          size: 50, color: Colors.green.shade500),
-                    ),
-                    const SizedBox(height: 10),
-                    Text(
-                      user.name,
-                      style: const TextStyle(
-                        fontSize: 26,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                      ),
-                    ),
-                    Text(
-                      user.email,
-                      style:
-                          const TextStyle(fontSize: 18, color: Colors.white70),
-                    ),
-                  ],
+              );
+            }
+            if (state is InvoiceError) {
+              Navigator.pop(context); // Close the loading dialog
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(state.message),
+                  backgroundColor: Colors.red,
                 ),
-              ),
-              const SizedBox(height: 20),
-              Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _buildInfoTile(Icons.phone, "Phone", user.phone),
-                    _buildInfoTile(
-                      Icons.verified_user,
-                      "Status",
-                      user.isActivate ? 'Active' : 'Inactive',
-                      textColor: user.isActivate ? Colors.green : Colors.red,
+              );
+            }
+            if (state is InvoiceLoading) {
+              showDialog(
+                  context: context,
+                  barrierDismissible: false,
+                  builder: (context) {
+                    return const Center(
+                      child: CircularProgressIndicator(
+                        color: Colors.green,
+                      ),
+                    );
+                  });
+            }
+          },
+          child: SingleChildScrollView(
+            child: Column(
+              children: [
+                Container(
+                  width: double.infinity,
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 20, vertical: 30),
+                  decoration: const BoxDecoration(
+                    color: Colors.green,
+                    borderRadius: BorderRadius.only(
+                      bottomLeft: Radius.circular(20),
+                      bottomRight: Radius.circular(20),
                     ),
-                    const SizedBox(height: 20),
-                    // Order section with BlocBuilder
-                    BlocBuilder<UserOrderBloc, UserOrderState>(
-                      builder: (context, state) {
-                        if (state is UserOrderLoading) {
-                          return Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const Text(
-                                "Getting your orders...",
-                                style: TextStyle(
-                                    fontSize: 18, fontWeight: FontWeight.bold),
-                              ),
-                              ListView.builder(
-                                itemCount: 3, // show 3 shimmer tiles
-                                itemBuilder: (context, index) {
-                                  return Padding(
-                                    padding: const EdgeInsets.symmetric(
-                                        vertical: 8.0),
-                                    child: Shimmer.fromColors(
-                                      baseColor: Colors.grey.shade300,
-                                      highlightColor: Colors.grey.shade100,
-                                      child: ListTile(
-                                        leading: const CircleAvatar(
-                                          backgroundColor: Colors.white,
-                                          radius: 24,
-                                        ),
-                                        title: Container(
-                                          height: 12,
-                                          color: Colors.white,
-                                          margin: EdgeInsets.only(bottom: 8),
-                                        ),
-                                        subtitle: Container(
-                                          height: 12,
-                                          color: Colors.white,
+                  ),
+                  child: Column(
+                    children: [
+                      CircleAvatar(
+                        radius: 50,
+                        backgroundColor: Colors.white,
+                        child: Icon(Icons.person,
+                            size: 50, color: Colors.green.shade500),
+                      ),
+                      const SizedBox(height: 10),
+                      Text(
+                        user.name,
+                        style: const TextStyle(
+                          fontSize: 26,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                      ),
+                      Text(
+                        user.email,
+                        style: const TextStyle(
+                            fontSize: 18, color: Colors.white70),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 20),
+                Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _buildInfoTile(Icons.phone, "Phone", user.phone),
+                      _buildInfoTile(
+                        Icons.verified_user,
+                        "Status",
+                        user.isActivate ? 'Active' : 'Inactive',
+                        textColor: user.isActivate ? Colors.green : Colors.red,
+                      ),
+                      const SizedBox(height: 20),
+                      // Order section with BlocBuilder
+                      BlocBuilder<UserOrderBloc, UserOrderState>(
+                        builder: (context, state) {
+                          if (state is UserOrderLoading) {
+                            return Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const Text(
+                                  "Getting your orders...",
+                                  style: TextStyle(
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.bold),
+                                ),
+                                ListView.builder(
+                                  itemCount: 3, // show 3 shimmer tiles
+                                  itemBuilder: (context, index) {
+                                    return Padding(
+                                      padding: const EdgeInsets.symmetric(
+                                          vertical: 8.0),
+                                      child: Shimmer.fromColors(
+                                        baseColor: Colors.grey.shade300,
+                                        highlightColor: Colors.grey.shade100,
+                                        child: ListTile(
+                                          leading: const CircleAvatar(
+                                            backgroundColor: Colors.white,
+                                            radius: 24,
+                                          ),
+                                          title: Container(
+                                            height: 12,
+                                            color: Colors.white,
+                                            margin: EdgeInsets.only(bottom: 8),
+                                          ),
+                                          subtitle: Container(
+                                            height: 12,
+                                            color: Colors.white,
+                                          ),
                                         ),
                                       ),
+                                    );
+                                  },
+                                  shrinkWrap: true,
+                                  physics: const NeverScrollableScrollPhysics(),
+                                )
+                              ],
+                            );
+                          } else if (state is UserOrderSuccess) {
+                            final orders = state.orders;
+                            if (orders.isEmpty) {
+                              return const Center(
+                                child: Text(
+                                  "No orders found",
+                                  style: TextStyle(fontSize: 16),
+                                ),
+                              );
+                            }
+
+                            return Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    const Text(
+                                      "Recent Orders",
+                                      style: TextStyle(
+                                          fontSize: 18,
+                                          fontWeight: FontWeight.bold),
                                     ),
-                                  );
-                                },
-                                shrinkWrap: true,
-                                physics: const NeverScrollableScrollPhysics(),
-                              )
-                            ],
-                          );
-                        } else if (state is UserOrderSuccess) {
-                          final orders = state.orders;
-                          if (orders.isEmpty) {
-                            return const Center(
-                              child: Text(
-                                "No orders found",
-                                style: TextStyle(fontSize: 16),
+                                    if (orders.length > 3)
+                                      TextButton(
+                                        onPressed: () {
+                                          setState(() {
+                                            _showAllOrders = !_showAllOrders;
+                                          });
+                                        },
+                                        child: Text(
+                                          _showAllOrders
+                                              ? "Show Less"
+                                              : "See All",
+                                          style: const TextStyle(
+                                              color: Colors.green),
+                                        ),
+                                      ),
+                                  ],
+                                ),
+                                const SizedBox(height: 10),
+                                ..._getDisplayedOrders(orders)
+                                    .map((order) => _buildOrderItem(order))
+                                    .toList(),
+                              ],
+                            );
+                          } else if (state is UserOrderFailure) {
+                            return Center(
+                              child: Column(
+                                children: [
+                                  Text(
+                                    "Error loading orders: ${state.errorMessage}",
+                                    style: const TextStyle(color: Colors.red),
+                                  ),
+                                  const SizedBox(height: 10),
+                                  ElevatedButton(
+                                    onPressed: () {
+                                      context
+                                          .read<UserOrderBloc>()
+                                          .add(FetchUserOrders(user.id));
+                                    },
+                                    child: const Text("Retry"),
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: Colors.green,
+                                    ),
+                                  ),
+                                ],
                               ),
                             );
                           }
 
-                          return Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
-                                mainAxisAlignment:
-                                    MainAxisAlignment.spaceBetween,
-                                children: [
-                                  const Text(
-                                    "Recent Orders",
-                                    style: TextStyle(
-                                        fontSize: 18,
-                                        fontWeight: FontWeight.bold),
-                                  ),
-                                  if (orders.length > 3)
-                                    TextButton(
-                                      onPressed: () {
-                                        setState(() {
-                                          _showAllOrders = !_showAllOrders;
-                                        });
-                                      },
-                                      child: Text(
-                                        _showAllOrders
-                                            ? "Show Less"
-                                            : "See All",
-                                        style: const TextStyle(
-                                            color: Colors.green),
-                                      ),
-                                    ),
-                                ],
-                              ),
-                              const SizedBox(height: 10),
-                              ..._getDisplayedOrders(orders)
-                                  .map((order) => _buildOrderItem(order))
-                                  .toList(),
-                            ],
-                          );
-                        } else if (state is UserOrderFailure) {
-                          return Center(
-                            child: Column(
-                              children: [
-                                Text(
-                                  "Error loading orders: ${state.errorMessage}",
-                                  style: const TextStyle(color: Colors.red),
-                                ),
-                                const SizedBox(height: 10),
-                                ElevatedButton(
-                                  onPressed: () {
-                                    context
-                                        .read<UserOrderBloc>()
-                                        .add(FetchUserOrders(user.id));
-                                  },
-                                  child: const Text("Retry"),
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: Colors.green,
-                                  ),
-                                ),
-                              ],
+                          // Initial state or any other state
+                          return const Center(
+                            child: CircularProgressIndicator(
+                              color: Colors.green,
                             ),
                           );
-                        }
-
-                        // Initial state or any other state
-                        return const Center(
-                          child: CircularProgressIndicator(
-                            color: Colors.green,
-                          ),
-                        );
-                      },
-                    ),
-                    const SizedBox(height: 20),
-                    ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        foregroundColor: Colors.white,
-                        backgroundColor: Colors.red.shade400,
-                        minimumSize: const Size.fromHeight(50),
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 40, vertical: 12),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
-                        ),
+                        },
                       ),
-                      onPressed: showLogoutBottomSheet,
-                      child: const Text("Logout"),
-                    ),
-                  ],
+                      const SizedBox(height: 20),
+                      ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          foregroundColor: Colors.white,
+                          backgroundColor: Colors.red.shade400,
+                          minimumSize: const Size.fromHeight(50),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 40, vertical: 12),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                        ),
+                        onPressed: showLogoutBottomSheet,
+                        child: const Text("Logout"),
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
@@ -405,8 +459,9 @@ class _ProfilePageState extends State<ProfilePage> {
                 if (order.invoiceId.isNotEmpty)
                   TextButton(
                     onPressed: () {
-                      // Navigate to invoice page
-                      // context.pushNamed(Routes.invoice, extra: order);
+                      context.read<InvoiceBloc>().add(GetInvoiceEvent(
+                            order.invoiceId,
+                          ));
                     },
                     child: const Text(
                       "View Invoice",

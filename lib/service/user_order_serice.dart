@@ -1,4 +1,5 @@
 import 'package:cart_veg/config/constant/constant.dart';
+import 'package:cart_veg/model/invoice_model.dart';
 import 'package:cart_veg/model/user_order_model.dart';
 import 'package:dio/dio.dart';
 import 'package:fpdart/fpdart.dart';
@@ -22,6 +23,21 @@ class UserOrderService {
     } catch (e) {
       print(e);
       return left("Failed to load user orders");
+    }
+  }
+
+  Future<Either<String, Invoice>> getInvoice(String id) async {
+    try {
+      final response = await _dio.get("common/invoice?invoiceId=$id");
+      if (response.statusCode == 200) {
+        final json = response.data["invoice"];
+        return right(Invoice.fromJson(json));
+      } else {
+        return left("Failed to load invoice");
+      }
+    } catch (e) {
+      print(e);
+      return left("Failed to load invoice");
     }
   }
 }

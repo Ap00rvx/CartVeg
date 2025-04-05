@@ -2,6 +2,7 @@ import 'package:cart_veg/bloc/auth/authentication_bloc_bloc.dart';
 import 'package:cart_veg/bloc/cart/cart_bloc.dart';
 import 'package:cart_veg/bloc/categories/category_bloc.dart';
 import 'package:cart_veg/bloc/category_page/category_bloc.dart';
+import 'package:cart_veg/bloc/invoice/invoice_bloc.dart';
 import 'package:cart_veg/bloc/order/order_bloc.dart';
 import 'package:cart_veg/bloc/product/product_bloc.dart';
 import 'package:cart_veg/bloc/productIds/product_ids_bloc.dart';
@@ -52,6 +53,8 @@ class RootApp extends StatelessWidget {
           create:(context)  => CategoryPageBloc()),
         BlocProvider(
           create:(context)  => UserOrderBloc()),
+        BlocProvider(
+          create:(context)  => InvoiceBloc()),
       ],
       child: MaterialApp.router(
         theme: ThemeData(

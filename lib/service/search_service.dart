@@ -1,5 +1,6 @@
 import 'package:cart_veg/config/constant/constant.dart';
-import 'package:cart_veg/model/search_product_model.dart';
+import 'package:cart_veg/model/product_model.dart';
+
 import 'package:dio/dio.dart';
 
 class SearchService {
@@ -9,10 +10,10 @@ class SearchService {
     receiveTimeout: Duration(seconds: 15),
   ));
 
-  List<SearchProductModel> _searchProductList = [];
-  List<SearchProductModel> _filteredSearchList = [];
+  List<Product> _searchProductList = [];
+  List<Product> _filteredSearchList = [];
 
-  Future<List<SearchProductModel>> fetchSearchProductList() async {
+  Future<List<Product>> fetchSearchProductList() async {
     try {
       final response = await _dio.get('/product/list');
       if (response.statusCode == 200) {
@@ -22,7 +23,7 @@ class SearchService {
         }
         print("Data: $data");
         _searchProductList =
-            data.map((e) => SearchProductModel.fromJson(e)).toList();
+            data.map((e) => Product.fromJson(e)).toList();
         _filteredSearchList = List.from(
             _searchProductList); // Initially, filtered list = full list
 
@@ -41,13 +42,12 @@ class SearchService {
     if (query.isEmpty) {
       _filteredSearchList = List.from(_searchProductList);
     } else {
-      _filteredSearchList = _searchProductList
-          .where((product) =>
-              product.name.toLowerCase().contains(query.toLowerCase()))
-          .toList();
+      _filteredSearchList = _searchProductList.where((product)=>
+          product.name.toLowerCase().contains(query.toLowerCase())).toList();
+          
     }
   }
 
   /// Getter for filtered search results
-  List<SearchProductModel> get searchResults => _filteredSearchList;
+  List<Product> get searchResults => _filteredSearchList;
 }

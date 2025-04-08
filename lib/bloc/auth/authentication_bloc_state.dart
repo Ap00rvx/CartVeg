@@ -32,3 +32,11 @@ final class VerifyTokenSuccess extends AuthenticationBlocState {
 
   VerifyTokenSuccess(this.response);
 }
+
+final class UserDetailsSuccess extends AuthenticationBlocState {
+  final User user;
+
+  UserDetailsSuccess({required this.user});
+
+
+}

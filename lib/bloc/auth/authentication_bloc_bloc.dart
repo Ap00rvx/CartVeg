@@ -82,6 +82,10 @@ class AuthenticationBlocBloc
         final response =
             await locator.get<AuthenticationService>().getUserDetails();
         print(response);
+        response.fold(
+          (errorMessage) => emit(AuthenticationBlocFailure(errorMessage)),
+          (user) => emit(UserDetailsSuccess(user: user)),
+        );
       } catch (err) {
         emit(AuthenticationBlocFailure("Failed to get user details"));
       }

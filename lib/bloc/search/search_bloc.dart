@@ -1,8 +1,10 @@
 import 'package:cart_veg/locator.dart';
+import 'package:cart_veg/model/product_model.dart';
+
 import 'package:cart_veg/service/search_service.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:cart_veg/config/constant/constant.dart';
-import 'package:cart_veg/model/search_product_model.dart';
+
 import 'package:dio/dio.dart';
 import 'package:equatable/equatable.dart';
 
@@ -39,7 +41,7 @@ class SearchLoading extends SearchState {}
 
 /// Success State with List of Products
 class SearchLoaded extends SearchState {
-  final List<SearchProductModel> products;
+  final List<Product> products;
 
   SearchLoaded(this.products);
 
@@ -66,7 +68,7 @@ class SearchBloc extends Bloc<SearchEvent, SearchState> {
     receiveTimeout: Duration(seconds: 15),
   ));
 
-  List<SearchProductModel> _searchProductList = [];
+  List<Product> _searchProductList = [];
 
   SearchBloc({required this.searchService}) : super(SearchInitial()) {
     on<FetchSearchProducts>(_fetchProducts);

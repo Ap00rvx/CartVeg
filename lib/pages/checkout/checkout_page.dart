@@ -920,9 +920,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
               return;
             }
             _couponController.text = coupon.couponCode;
-            context
-                .read<CouponBloc>()
-                .add(ApplyCoupon(coupon.couponCode, user.id, subtotal.toInt()));
+          
           },
           style: ElevatedButton.styleFrom(
             backgroundColor: coupon.usedUsers.contains(userId)

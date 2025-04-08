@@ -3,6 +3,7 @@ import 'package:cart_veg/bloc/cart/cart_bloc.dart';
 import 'package:cart_veg/bloc/product/product_bloc.dart';
 import 'package:cart_veg/bloc/productIds/product_ids_bloc.dart';
 import 'package:cart_veg/locator.dart';
+import 'package:cart_veg/model/verify_otp_model.dart';
 import 'package:cart_veg/pages/home/widgets/search_bar.dart';
 import 'package:cart_veg/service/authentication_service.dart';
 import 'package:cart_veg/model/product_model.dart';
@@ -37,7 +38,7 @@ class _HomeContentState extends State<HomeContent> {
       ..add(const LoadProducts(category: ""));
     _cartBloc = locator<CartBloc>()..add(CartStarted());
     _scrollController.addListener(_onScroll);
-
+    // context.read<AuthenticationBlocBloc>().add(GetUserDetailsEvent());
     // Extract colors from the flyer image
     _extractColorsFromFlyer();
   }
@@ -115,148 +116,155 @@ class _HomeContentState extends State<HomeContent> {
               ),
             );
           }
-          return Scaffold(
-            backgroundColor: Colors.white,
-            appBar: AppBar(
-              backgroundColor: _appBarColor, // Use extracted color
-              toolbarHeight: 80,
-              title: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Welcome back,',
-                    style: TextStyle(
-                      fontSize: 16,
-                      color: _colorsLoaded
-                          ? _contrastingTextColor(_appBarColor)
-                          : Colors.green,
-                    ),
-                  ),
-                  Text(
-                    user?.name ?? 'Guest',
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                      color: _colorsLoaded
-                          ? _contrastingTextColor(_appBarColor)
-                          : Colors.black,
-                    ),
-                  ),
-                ],
-              ),
-              actions: [
-                CircleAvatar(
-                  backgroundColor: _colorsLoaded
-                      ? _searchBarColor
-                      : Colors.green.withOpacity(0.4),
-                  radius: 23,
-                  child: Text(
-                    user?.name?.substring(0, 1).toUpperCase() ?? 'G',
-                    style: TextStyle(
-                      color: _colorsLoaded
-                          ? _contrastingTextColor(_searchBarColor)
-                          : Colors.white,
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 10),
-              ],
-            ),
-            body: RefreshIndicator(
-              onRefresh: () async {
-                _productBloc.add(const LoadProducts(category: ""));
-                context.read<ProductIdsBloc>().add(ProductIdsFetchEvent());
-                _cartBloc.add(CartStarted());
-              },
-              child: SingleChildScrollView(
-                controller: _scrollController,
-                child: Column(
+          if (state is UserDetailsSuccess) {
+            return Scaffold(
+              backgroundColor: Colors.white,
+              appBar: AppBar(
+                backgroundColor: _appBarColor, // Use extracted color
+                toolbarHeight: 80,
+                title: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Container(
-                      width: double.infinity,
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          colors: [
-                            _appBarColor, // Use extracted app bar color
-                            _appBarColor, // Use extracted app bar color
-                            // Use extracted search bar color
-                          ],
-                          begin: Alignment.topCenter,
-                          end: Alignment.bottomCenter,
-                        ),
-                        borderRadius: const BorderRadius.only(
-                          bottomLeft: Radius.circular(20),
-                          bottomRight: Radius.circular(20),
-                        ),
-                      ),
-                      child: Column(
-                        children: [
-                          const SizedBox(height: 20),
-                          Padding(
-                            padding: const EdgeInsets.all(20.0),
-                            child: ProductSearchBar(),
-                          ),
-                          SizedBox(height: 20),
-                          Container(
-                            height: 200,
-                            width: MediaQuery.of(context).size.width,
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(100),
-                            ),
-                            child: ClipRRect(
-                              borderRadius: BorderRadius.only(
-                                  bottomLeft: Radius.circular(20),
-                                  bottomRight: Radius.circular(20)),
-                              child: Image.asset(
-                                "assets/images/flyer.jpg",
-                                fit: BoxFit.fitWidth,
-                                width: MediaQuery.of(context).size.width,
-                              ),
-                            ),
-                          ),
-                        ],
+                    Text(
+                      'Welcome back,',
+                      style: TextStyle(
+                        fontSize: 16,
+                        color: _colorsLoaded
+                            ? _contrastingTextColor(_appBarColor)
+                            : Colors.green,
                       ),
                     ),
-                    const SizedBox(height: 20),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 8.0),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          // Flyer card with extracted background color
-
-                          const Text(
-                            "Popular Items",
-                            style: TextStyle(
-                              fontSize: 20,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          const SizedBox(height: 10),
-                          BlocBuilder<ProductBloc, ProductState>(
-                            builder: (context, state) {
-                              if (state is ProductInitial ||
-                                  state is ProductLoading) {
-                                return _buildLoadingShimmer();
-                              } else if (state is ProductsLoaded) {
-                                return _buildProductGrid(state.products,
-                                    state.hasMore, state.isLoadingMore);
-                              } else if (state is ProductError) {
-                                return _buildErrorState(state.message);
-                              }
-                              return const Center(
-                                  child: Text('Unexpected state'));
-                            },
-                          ),
-                          const SizedBox(height: 90),
-                        ],
+                    Text(
+                      user?.name ?? 'Guest',
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        color: _colorsLoaded
+                            ? _contrastingTextColor(_appBarColor)
+                            : Colors.black,
                       ),
                     ),
                   ],
                 ),
+                actions: [
+                  CircleAvatar(
+                    backgroundColor: _colorsLoaded
+                        ? _searchBarColor
+                        : Colors.green.withOpacity(0.4),
+                    radius: 23,
+                    child: Text(
+                      user?.name?.substring(0, 1).toUpperCase() ?? 'G',
+                      style: TextStyle(
+                        color: _colorsLoaded
+                            ? _contrastingTextColor(_searchBarColor)
+                            : Colors.white,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                ],
               ),
+              body: RefreshIndicator(
+                onRefresh: () async {
+                  _productBloc.add(const LoadProducts(category: ""));
+                  context.read<ProductIdsBloc>().add(ProductIdsFetchEvent());
+                  _cartBloc.add(CartStarted());
+                },
+                child: SingleChildScrollView(
+                  controller: _scrollController,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Container(
+                        width: double.infinity,
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: [
+                              _appBarColor, // Use extracted app bar color
+                              _appBarColor, // Use extracted app bar color
+                              // Use extracted search bar color
+                            ],
+                            begin: Alignment.topCenter,
+                            end: Alignment.bottomCenter,
+                          ),
+                          borderRadius: const BorderRadius.only(
+                            bottomLeft: Radius.circular(20),
+                            bottomRight: Radius.circular(20),
+                          ),
+                        ),
+                        child: Column(
+                          children: [
+                            const SizedBox(height: 20),
+                            Padding(
+                              padding: const EdgeInsets.all(20.0),
+                              child: ProductSearchBar(),
+                            ),
+                            SizedBox(height: 20),
+                            Container(
+                              height: 200,
+                              width: MediaQuery.of(context).size.width,
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(100),
+                              ),
+                              child: ClipRRect(
+                                borderRadius: BorderRadius.only(
+                                    bottomLeft: Radius.circular(20),
+                                    bottomRight: Radius.circular(20)),
+                                child: Image.asset(
+                                  "assets/images/flyer.jpg",
+                                  fit: BoxFit.fitWidth,
+                                  width: MediaQuery.of(context).size.width,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            // Flyer card with extracted background color
+
+                            const Text(
+                              "Popular Items",
+                              style: TextStyle(
+                                fontSize: 20,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            const SizedBox(height: 10),
+                            BlocBuilder<ProductBloc, ProductState>(
+                              builder: (context, state) {
+                                if (state is ProductInitial ||
+                                    state is ProductLoading) {
+                                  return _buildLoadingShimmer();
+                                } else if (state is ProductsLoaded) {
+                                  return _buildProductGrid(state.products,
+                                      state.hasMore, state.isLoadingMore);
+                                } else if (state is ProductError) {
+                                  return _buildErrorState(state.message);
+                                }
+                                return const Center(
+                                    child: Text('Unexpected state'));
+                              },
+                            ),
+                            const SizedBox(height: 90),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            );
+          }
+          return const Center(
+            child: CircularProgressIndicator(
+              color: Colors.green,
             ),
           );
         },

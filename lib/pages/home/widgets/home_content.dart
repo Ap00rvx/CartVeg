@@ -1,3 +1,4 @@
+import 'package:cart_veg/bloc/auth/authentication_bloc_bloc.dart';
 import 'package:cart_veg/bloc/cart/cart_bloc.dart';
 import 'package:cart_veg/bloc/product/product_bloc.dart';
 import 'package:cart_veg/bloc/productIds/product_ids_bloc.dart';
@@ -9,6 +10,7 @@ import 'package:cart_veg/widgets/button_style.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:shimmer/shimmer.dart';
+import 'package:palette_generator/palette_generator.dart';
 
 class HomeContent extends StatefulWidget {
   const HomeContent({super.key});
@@ -21,8 +23,12 @@ class _HomeContentState extends State<HomeContent> {
   final user = locator.get<AuthenticationService>().user;
   final ScrollController _scrollController = ScrollController();
   late ProductBloc _productBloc;
-
   late CartBloc _cartBloc;
+
+  // Add palette color variables
+  Color _appBarColor = Colors.green.shade100; // Default color
+  Color _searchBarColor = Colors.green.shade300; // Default color
+  bool _colorsLoaded = false;
 
   @override
   void initState() {
@@ -31,6 +37,40 @@ class _HomeContentState extends State<HomeContent> {
       ..add(const LoadProducts(category: ""));
     _cartBloc = locator<CartBloc>()..add(CartStarted());
     _scrollController.addListener(_onScroll);
+
+    // Extract colors from the flyer image
+    _extractColorsFromFlyer();
+  }
+
+  // Add method to extract colors
+  Future<void> _extractColorsFromFlyer() async {
+    try {
+      final PaletteGenerator paletteGenerator =
+          await PaletteGenerator.fromImageProvider(
+        const AssetImage("assets/images/flyer.jpg"),
+        size: const Size(200, 100), // Smaller size for faster processing
+        maximumColorCount: 20, // Get more colors to have better options
+      );
+
+      // Use dominant color for app bar if available, otherwise use vibrant or fallback
+      final Color appBarColor = paletteGenerator.dominantColor?.color ??
+          paletteGenerator.vibrantColor?.color ??
+          Colors.green.shade100;
+
+      // Use a complementary or lighter shade for search bar gradient
+      final Color searchBarColor = paletteGenerator.lightVibrantColor?.color ??
+          paletteGenerator.mutedColor?.color ??
+          appBarColor.withOpacity(0.7);
+
+      // Update state with extracted colors
+      setState(() {
+        _appBarColor = appBarColor;
+        _searchBarColor = searchBarColor;
+        _colorsLoaded = true;
+      });
+    } catch (e) {
+      print("Error extracting colors: $e");
+    }
   }
 
   @override
@@ -58,138 +98,182 @@ class _HomeContentState extends State<HomeContent> {
       providers: [
         BlocProvider<ProductBloc>.value(value: _productBloc),
       ],
-      child: Scaffold(
-        backgroundColor: Colors.white,
-        appBar: AppBar(
-          backgroundColor: Colors.green.shade100,
-          toolbarHeight: 80,
-          title: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text(
-                'Welcome back,',
-                style: TextStyle(fontSize: 16, color: Colors.green),
+      child: BlocBuilder<AuthenticationBlocBloc, AuthenticationBlocState>(
+        builder: (context, state) {
+          if (state is AuthenticationBlocLoading) {
+            return const Center(
+              child: CircularProgressIndicator(
+                color: Colors.green,
               ),
-              Text(
-                user?.name ?? 'Guest',
-                style: const TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.black,
-                ),
-              ),
-            ],
-          ),
-          actions: [
-            CircleAvatar(
-              backgroundColor: Colors.green.withOpacity(0.4),
-              radius: 23,
+            );
+          }
+          if (state is AuthenticationBlocFailure) {
+            return Center(
               child: Text(
-                user?.name?.substring(0, 1).toUpperCase() ?? 'G',
-                style: const TextStyle(color: Colors.white),
+                state.errorMessage,
+                style: const TextStyle(color: Colors.red, fontSize: 16),
               ),
-            ),
-            const SizedBox(width: 10),
-          ],
-        ),
-        body: RefreshIndicator(
-          onRefresh: () async {
-            _productBloc.add(const LoadProducts(category: ""));
-
-            context.read<ProductIdsBloc>().add(ProductIdsFetchEvent());
-
-            _cartBloc.add(CartStarted());
-          },
-          child: SingleChildScrollView(
-            controller: _scrollController,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(20),
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [
-                        Colors.green.shade100,
-                        Colors.green.shade300,
-                      ],
-                      begin: Alignment.topCenter,
-                      end: Alignment.bottomCenter,
-                    ),
-                    borderRadius: const BorderRadius.only(
-                      bottomLeft: Radius.circular(20),
-                      bottomRight: Radius.circular(20),
+            );
+          }
+          return Scaffold(
+            backgroundColor: Colors.white,
+            appBar: AppBar(
+              backgroundColor: _appBarColor, // Use extracted color
+              toolbarHeight: 80,
+              title: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Welcome back,',
+                    style: TextStyle(
+                      fontSize: 16,
+                      color: _colorsLoaded
+                          ? _contrastingTextColor(_appBarColor)
+                          : Colors.green,
                     ),
                   ),
-                  child: const Column(
-                    children: [
-                      const SizedBox(height: 20),
-                      const ProductSearchBar(),
-                    ],
+                  Text(
+                    user?.name ?? 'Guest',
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: _colorsLoaded
+                          ? _contrastingTextColor(_appBarColor)
+                          : Colors.black,
+                    ),
+                  ),
+                ],
+              ),
+              actions: [
+                CircleAvatar(
+                  backgroundColor: _colorsLoaded
+                      ? _searchBarColor
+                      : Colors.green.withOpacity(0.4),
+                  radius: 23,
+                  child: Text(
+                    user?.name?.substring(0, 1).toUpperCase() ?? 'G',
+                    style: TextStyle(
+                      color: _colorsLoaded
+                          ? _contrastingTextColor(_searchBarColor)
+                          : Colors.white,
+                    ),
                   ),
                 ),
-                Padding(
-                  padding: const EdgeInsets.all(8.0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const SizedBox(height: 20),
-                      // create a demo flyer card
-                      Container(
-                        height: 200,
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(10),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.grey.withOpacity(0.2),
-                              spreadRadius: 1,
-                              blurRadius: 5,
-                              offset: const Offset(0, 3),
-                            ),
-                          ],
-                        ),
-                        child: ClipRRect(
-                          borderRadius: BorderRadius.circular(10),
-                          child: Image.asset(
-                            "assets/images/flyer.jpg",
-                            fit: BoxFit.cover,
-                            width: double.infinity,
-                          ),
-                        ),
-                      ),
-                      const Text(
-                        "Popular Items",
-                        style: TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      const SizedBox(height: 10),
-                      BlocBuilder<ProductBloc, ProductState>(
-                        builder: (context, state) {
-                          if (state is ProductInitial ||
-                              state is ProductLoading) {
-                            return _buildLoadingShimmer();
-                          } else if (state is ProductsLoaded) {
-                            return _buildProductGrid(state.products,
-                                state.hasMore, state.isLoadingMore);
-                          } else if (state is ProductError) {
-                            return _buildErrorState(state.message);
-                          }
-                          return const Center(child: Text('Unexpected state'));
-                        },
-                      ),
-                    ],
-                  ),
-                ),
+                const SizedBox(width: 10),
               ],
             ),
-          ),
-        ),
+            body: RefreshIndicator(
+              onRefresh: () async {
+                _productBloc.add(const LoadProducts(category: ""));
+                context.read<ProductIdsBloc>().add(ProductIdsFetchEvent());
+                _cartBloc.add(CartStarted());
+              },
+              child: SingleChildScrollView(
+                controller: _scrollController,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Container(
+                      width: double.infinity,
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [
+                            _appBarColor, // Use extracted app bar color
+                            _appBarColor, // Use extracted app bar color
+                            // Use extracted search bar color
+                          ],
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                        ),
+                        borderRadius: const BorderRadius.only(
+                          bottomLeft: Radius.circular(20),
+                          bottomRight: Radius.circular(20),
+                        ),
+                      ),
+                      child: Column(
+                        children: [
+                          const SizedBox(height: 20),
+                          Padding(
+                            padding: const EdgeInsets.all(20.0),
+                            child: ProductSearchBar(),
+                          ),
+                          SizedBox(height: 20),
+                          Container(
+                            height: 200,
+                            width: MediaQuery.of(context).size.width,
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(100),
+                            ),
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.only(
+                                  bottomLeft: Radius.circular(20),
+                                  bottomRight: Radius.circular(20)),
+                              child: Image.asset(
+                                "assets/images/flyer.jpg",
+                                fit: BoxFit.fitWidth,
+                                width: MediaQuery.of(context).size.width,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // Flyer card with extracted background color
+
+                          const Text(
+                            "Popular Items",
+                            style: TextStyle(
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const SizedBox(height: 10),
+                          BlocBuilder<ProductBloc, ProductState>(
+                            builder: (context, state) {
+                              if (state is ProductInitial ||
+                                  state is ProductLoading) {
+                                return _buildLoadingShimmer();
+                              } else if (state is ProductsLoaded) {
+                                return _buildProductGrid(state.products,
+                                    state.hasMore, state.isLoadingMore);
+                              } else if (state is ProductError) {
+                                return _buildErrorState(state.message);
+                              }
+                              return const Center(
+                                  child: Text('Unexpected state'));
+                            },
+                          ),
+                          const SizedBox(height: 90),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          );
+        },
       ),
     );
+  }
+
+  // Helper method to determine contrasting text color
+  Color _contrastingTextColor(Color backgroundColor) {
+    // Calculate relative luminance using the formula
+    double luminance = (0.299 * backgroundColor.red +
+            0.587 * backgroundColor.green +
+            0.114 * backgroundColor.blue) /
+        255;
+
+    // Use white text on dark backgrounds, black text on light backgrounds
+    return luminance > 0.5 ? Colors.black : Colors.white;
   }
 
   Widget _buildProductGrid(
@@ -259,8 +343,7 @@ class _HomeContentState extends State<HomeContent> {
                       ),
                       const SizedBox(width: 4),
                       Text("₹${product.price}",
-                          style: const TextStyle(
-                              fontSize: 14, color: Colors.green)),
+                          style: TextStyle(fontSize: 14, color: Colors.green)),
                     ],
                   ),
                   const SizedBox(height: 4),
@@ -295,7 +378,7 @@ class _HomeContentState extends State<HomeContent> {
                                     color: Colors.green,
                                     borderRadius: BorderRadius.circular(4),
                                   ),
-                                  child: const Icon(
+                                  child: Icon(
                                     Icons.remove,
                                     color: Colors.white,
                                     size: 18,
@@ -340,7 +423,7 @@ class _HomeContentState extends State<HomeContent> {
                                         : Colors.green,
                                     borderRadius: BorderRadius.circular(4),
                                   ),
-                                  child: const Icon(
+                                  child: Icon(
                                     Icons.add,
                                     color: Colors.white,
                                     size: 18,
@@ -370,10 +453,19 @@ class _HomeContentState extends State<HomeContent> {
                         style: greenButtonStyle.copyWith(
                           minimumSize: const WidgetStatePropertyAll(
                               Size(double.maxFinite, 40)),
+                          backgroundColor:
+                              const WidgetStatePropertyAll(Colors.green),
                           foregroundColor:
                               const WidgetStatePropertyAll(Colors.white),
                         ),
-                        child: const Text("Add to Cart"),
+                        child: Text(
+                          "Add to Cart",
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: Colors.white,
+                          ),
+                        ),
                       );
                     },
                   ),
@@ -490,6 +582,12 @@ class _HomeContentState extends State<HomeContent> {
             onPressed: () {
               _productBloc.add(const LoadProducts(category: ""));
             },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: _colorsLoaded ? _appBarColor : Colors.blue,
+              foregroundColor: _colorsLoaded
+                  ? _contrastingTextColor(_appBarColor)
+                  : Colors.white,
+            ),
             child: const Text('Try Again'),
           ),
         ],

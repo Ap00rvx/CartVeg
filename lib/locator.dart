@@ -1,6 +1,7 @@
 import "package:cart_veg/bloc/cart/cart_bloc.dart";
 import "package:cart_veg/bloc/categories/category_bloc.dart";
 import "package:cart_veg/bloc/category_page/category_bloc.dart";
+import "package:cart_veg/bloc/coupon/coupon_bloc.dart";
 import "package:cart_veg/bloc/product/product_bloc.dart";
 import "package:cart_veg/bloc/search/search_bloc.dart";
 import "package:cart_veg/service/authentication_service.dart";
@@ -17,10 +18,10 @@ void setup() {
   locator.registerLazySingleton(() => AuthenticationService());
   locator.registerLazySingleton(() => HomePageService());
   locator.registerLazySingleton(() => SearchService());
-    locator.registerLazySingleton(() => CartService());
-    locator.registerLazySingleton(() => CurrentProductService());
-    locator.registerLazySingleton(() => CategoryService());
-  locator.registerFactory(() => CategoryPageBloc()); 
+  locator.registerLazySingleton(() => CartService());
+  locator.registerLazySingleton(() => CurrentProductService());
+  locator.registerLazySingleton(() => CategoryService());
+  locator.registerFactory(() => CategoryPageBloc());
   locator.registerFactory<ProductBloc>(() => ProductBloc(
         homePageService: locator<HomePageService>(),
       ));
@@ -30,8 +31,8 @@ void setup() {
       ));
   locator.registerFactory<CartBloc>(
       () => CartBloc(cartService: locator<CartService>()));
-      locator.registerFactory(() => SearchBloc(
+  locator.registerFactory(() => SearchBloc(
         searchService: locator<SearchService>(),
       ));
-        
+  locator.registerFactory<CouponBloc>(() => CouponBloc());
 }

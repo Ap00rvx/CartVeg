@@ -1,3 +1,4 @@
+import 'package:cart_veg/bloc/auth/authentication_bloc_bloc.dart';
 import 'package:cart_veg/bloc/cart/cart_bloc.dart';
 import 'package:cart_veg/bloc/search/search_bloc.dart';
 import 'package:cart_veg/locator.dart';
@@ -8,7 +9,7 @@ import 'package:badges/badges.dart' as badges;
 import 'package:cart_veg/pages/profile/profile_page.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:iconsax/iconsax.dart'; // Import the Iconsax package
+import 'package:iconsax/iconsax.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -20,20 +21,22 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> {
   int _selectedIndex = 0;
 
-  // List of pages to be shown in the IndexedStack
   final List<Widget> _pages = [
     const HomeContent(),
     const CategoryContent(),
     const CartPage(),
-    const ProfilePage()
+    const ProfilePage(),
   ];
 
- late SearchBloc _searchBloc;
+  late SearchBloc _searchBloc;
+  late AuthenticationBlocBloc _authBloc;
+
   @override
   void initState() {
     super.initState();
-     // Fetch products when the app starts
-     _searchBloc = context.read<SearchBloc>(); 
+    _searchBloc = context.read<SearchBloc>();
+    _authBloc = context.read<AuthenticationBlocBloc>();
+    _authBloc.add(GetUserDetailsEvent());
     _searchBloc.add(FetchSearchProducts());
   }
 
@@ -85,16 +88,13 @@ class _HomePageState extends State<HomePage> {
                   if (state is CartLoaded) {
                     itemCount = state.cart.totalItems;
                   }
-
                   return itemCount > 0
                       ? badges.Badge(
-                          badgeContent: itemCount > 0
-                              ? Text(
-                                  '$itemCount',
-                                  style: const TextStyle(
-                                      color: Colors.white, fontSize: 12),
-                                )
-                              : null, // Hide badge if count is 0
+                          badgeContent: Text(
+                            '$itemCount',
+                            style: const TextStyle(
+                                color: Colors.white, fontSize: 12),
+                          ),
                           badgeStyle: const badges.BadgeStyle(
                             badgeColor: Colors.grey,
                             padding: EdgeInsets.all(6),
@@ -110,19 +110,16 @@ class _HomePageState extends State<HomePage> {
                   if (state is CartLoaded) {
                     itemCount = state.cart.totalItems;
                   }
-
                   return itemCount > 0
                       ? badges.Badge(
-                          badgeContent: itemCount > 0
-                              ? Text(
-                                  '$itemCount',
-                                  style: const TextStyle(
-                                      color: Colors.white, fontSize: 12),
-                                )
-                              : null, // Hide badge if count is 0
+                          badgeContent: Text(
+                            '$itemCount',
+                            style: const TextStyle(
+                                color: Colors.white, fontSize: 12),
+                          ),
                           badgeStyle: badges.BadgeStyle(
                             badgeColor: Colors.green.shade900,
-                            padding: EdgeInsets.all(6),
+                            padding: const EdgeInsets.all(6),
                           ),
                           child: const Icon(Iconsax.shopping_cart),
                         )
@@ -139,6 +136,96 @@ class _HomePageState extends State<HomePage> {
           ],
         ),
       ),
+      floatingActionButton: BlocBuilder<CartBloc, CartState>(
+        builder: (context, state) {
+          int itemCount = 0;
+          double totalAmount = 0.0;
+          if (state is CartLoaded) {
+            itemCount = state.cart.totalItems;
+            totalAmount = state.cart.items.fold(
+                0.0, (sum, item) => sum + item.totalPrice); // Calculate total
+          }
+          return (itemCount > 0 && _selectedIndex != 2 && _selectedIndex != 3)
+              ? badges.Badge(
+                  showBadge: true,
+                  position: badges.BadgePosition.topEnd(top: 0, end: 3),
+                  badgeStyle: const badges.BadgeStyle(
+                    badgeColor: Colors.green,
+                    padding: EdgeInsets.all(6),
+                  ),
+                  badgeContent: Text(
+                    '$itemCount',
+                    style: const TextStyle(color: Colors.white, fontSize: 12),
+                  ),
+                  child: Container(
+                    width: MediaQuery.of(context).size.width -
+                        32, // Full width with padding
+                    height: 70,
+                    margin: const EdgeInsets.symmetric(horizontal: 16),
+                    child: Material(
+                      elevation: 8,
+                      borderRadius: BorderRadius.circular(12),
+                      color: Colors.green.shade900,
+                      child: InkWell(
+                        onTap: () {
+                          setState(() {
+                            _selectedIndex =
+                                2; // Navigate to CartPage (index 2)
+                          });
+                        },
+                        borderRadius: BorderRadius.circular(12),
+                        child: Padding(
+                          padding: const EdgeInsets.all(12.0),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Row(
+                                children: [
+                                  Icon(Iconsax.shopping_bag4,
+                                      color: Colors.white, size: 30),
+                                  const SizedBox(width: 12),
+                                  Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        '$itemCount Item${itemCount > 1 ? 's' : ''}',
+                                        style: const TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                      const Text(
+                                        'View Cart',
+                                        style: TextStyle(
+                                          color: Colors.white70,
+                                          fontSize: 12,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ],
+                              ),
+                              Text(
+                                '₹${totalAmount.toStringAsFixed(2)}',
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                )
+              : const SizedBox.shrink();
+        },
+      ),
+      floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
     );
   }
 }

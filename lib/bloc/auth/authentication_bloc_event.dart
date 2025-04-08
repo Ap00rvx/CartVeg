@@ -29,3 +29,7 @@ class VerifyTokenEvent extends AuthenticationBlocEvent {
 
   VerifyTokenEvent();
 }
+
+class GetUserDetailsEvent extends AuthenticationBlocEvent {
+  GetUserDetailsEvent();
+}

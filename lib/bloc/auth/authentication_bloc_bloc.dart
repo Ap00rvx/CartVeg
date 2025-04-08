@@ -77,5 +77,14 @@ class AuthenticationBlocBloc
         emit(AuthenticationBlocFailure("Failed to verify token"));
       }
     });
+    on<GetUserDetailsEvent>((event, emit) async {
+      try {
+        final response =
+            await locator.get<AuthenticationService>().getUserDetails();
+        print(response);
+      } catch (err) {
+        emit(AuthenticationBlocFailure("Failed to get user details"));
+      }
+    });
   }
 }

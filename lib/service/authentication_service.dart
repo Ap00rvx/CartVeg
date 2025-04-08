@@ -12,7 +12,7 @@ class AuthenticationService {
     receiveTimeout: Duration(seconds: 15),
   ));
 
-  late final User? _user;
+  late  User? _user;
 
   Future<Either<String, String>> sendOTPToEmail(String email) async {
     try {

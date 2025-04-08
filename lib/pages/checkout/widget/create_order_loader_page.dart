@@ -1,6 +1,9 @@
 import 'package:cart_veg/bloc/order/order_bloc.dart';
+import 'package:cart_veg/bloc/user_order/user_order_bloc.dart';
 import 'package:cart_veg/config/router/route_names.dart';
+import 'package:cart_veg/locator.dart';
 import 'package:cart_veg/pages/cart/cart_page.dart';
+import 'package:cart_veg/service/authentication_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
@@ -17,6 +20,7 @@ class CreateOrderLoaderPage extends StatefulWidget {
 class _CreateOrderLoaderPageState extends State<CreateOrderLoaderPage> {
   int _remainingSeconds = 7; // Timer duration in seconds
   bool _timerStarted = false;
+  final user = locator<AuthenticationService>().user!;
 
   @override
   void initState() {
@@ -44,8 +48,11 @@ class _CreateOrderLoaderPageState extends State<CreateOrderLoaderPage> {
         body: BlocListener<OrderBloc, OrderState>(
           listener: (context, state) {
             if (state is OrderCreated || state is OrderError) {
-              _startTimerAndPop(); // Start timer only when order is created or errored
+              _startTimerAndPop(); 
+              // Start timer only when order is created or errored
+               context.read<UserOrderBloc>().add(FetchUserOrders(user.id));
             }
+            
           },
           child: BlocBuilder<OrderBloc, OrderState>(
             builder: (context, state) {

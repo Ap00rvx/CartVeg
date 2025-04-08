@@ -20,13 +20,11 @@ class _CategoryContentState extends State<CategoryContent> {
   final user = locator.get<AuthenticationService>().user;
   final ScrollController _scrollController = ScrollController();
   late CategoryPageBloc _categoryPageBloc;
-  late CartBloc _cartBloc;
 
   @override
   void initState() {
     super.initState();
     _categoryPageBloc = locator<CategoryPageBloc>()..add(FetchInitialData());
-    _cartBloc = locator<CartBloc>()..add(CartStarted());
     _scrollController.addListener(_onScroll);
   }
 
@@ -49,14 +47,12 @@ class _CategoryContentState extends State<CategoryContent> {
 
   @override
   Widget build(BuildContext context) {
-    return MultiBlocProvider(
-      providers: [
-        BlocProvider<CategoryPageBloc>.value(value: _categoryPageBloc),
-        BlocProvider<CartBloc>.value(value: _cartBloc),
-      ],
+    return BlocProvider<CategoryPageBloc>.value(
+      value: _categoryPageBloc,
       child: Scaffold(
         backgroundColor: Colors.white,
         appBar: AppBar(
+          // ... (AppBar code remains unchanged)
           backgroundColor: Colors.white,
           toolbarHeight: 80,
           title: Column(
@@ -97,7 +93,7 @@ class _CategoryContentState extends State<CategoryContent> {
               currentCategory = currentState.selectedCategory;
             }
             _categoryPageBloc.add(RefreshProducts(currentCategory));
-            _cartBloc.add(CartStarted());
+            context.read<CartBloc>().add(CartStarted());
           },
           child: Column(
             children: [
@@ -177,7 +173,6 @@ class _CategoryContentState extends State<CategoryContent> {
                 return _buildLoadingShimmer();
               } else if (state is CategoryLoading &&
                   state.products.isNotEmpty) {
-                // Handle pagination loading state
                 return _buildProductGrid(state.products, true, true);
               } else if (state is CategoryLoaded) {
                 return _buildProductGrid(
@@ -188,6 +183,7 @@ class _CategoryContentState extends State<CategoryContent> {
               return const Center(child: Text("No products available."));
             },
           ),
+          const SizedBox(height: 90),
         ],
       ),
     );
@@ -379,7 +375,6 @@ class _CategoryContentState extends State<CategoryContent> {
                       return ElevatedButton(
                         onPressed: () {
                           context.read<CartBloc>().add(CartItemAdded(product));
-                          context.read<CartBloc>().add(CartStarted());
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(
                               content: Text(
@@ -398,7 +393,14 @@ class _CategoryContentState extends State<CategoryContent> {
                           foregroundColor:
                               const WidgetStatePropertyAll(Colors.white),
                         ),
-                        child: const Text("Add to Cart"),
+                        child: const Text(
+                          "Add to Cart",
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: Colors.white,
+                          ),
+                        ),
                       );
                     },
                   ),

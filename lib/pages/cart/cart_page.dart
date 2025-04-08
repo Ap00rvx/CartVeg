@@ -27,17 +27,17 @@ class _CartPageState extends State<CartPage> {
         (product) => product.id,
       )
       .toList();
+  final CartService _cartService = locator<CartService>();
 
-  @override
   @override
   void initState() {
     super.initState();
     // Initialize the CartBloc and load the cart items
     context.read<ProductIdsBloc>().add(ProductIdsFetchEvent());
-
     context.read<CartBloc>().add(CartStarted());
   }
 
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
@@ -56,6 +56,7 @@ class _CartPageState extends State<CartPage> {
                   },
                 );
               }
+
               return const SizedBox.shrink();
             },
           ),
@@ -74,7 +75,6 @@ class _CartPageState extends State<CartPage> {
             if (state is ProductIdsLoaded) {
               currentProducts =
                   state.productIds.map((e) => e.toString()).toList();
-              print(currentProducts);
               return BlocBuilder<CartBloc, CartState>(
                 builder: (context, state) {
                   if (state is CartLoading) {
@@ -158,13 +158,13 @@ class _CartPageState extends State<CartPage> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Icon(
+          Icon(
             Icons.shopping_cart_outlined,
             size: 100,
             color: Colors.grey,
           ),
-          const SizedBox(height: 20),
-          const Text(
+          SizedBox(height: 20),
+          Text(
             'Your cart is empty',
             style: TextStyle(
               fontSize: 20,
@@ -172,13 +172,13 @@ class _CartPageState extends State<CartPage> {
               color: Colors.grey,
             ),
           ),
-          const SizedBox(height: 10),
-          const Text(
+          SizedBox(height: 10),
+          Text(
             'Add items to your cart to continue shopping',
             style: TextStyle(color: Colors.grey),
             textAlign: TextAlign.center,
           ),
-          const SizedBox(height: 30),
+          SizedBox(height: 30),
         ],
       ),
     );
@@ -277,10 +277,10 @@ class _CartPageState extends State<CartPage> {
                   child: ElevatedButton(
                     onPressed: () {
                       for (var item in unavailableItems) {
-                        context
-                            .read<CartBloc>()
-                            .add(CartItemRemoved(item.product.id));
+                        _removeCartItem(item.product.id);
                       }
+                      // Refresh cart state after removing all unavailable items
+                      context.read<CartBloc>().add(CartStarted());
                     },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.red,
@@ -350,7 +350,6 @@ class _CartPageState extends State<CartPage> {
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
-                  
                   onPressed: availableItems.isEmpty
                       ? null // Disable button if no available items
                       : () {
@@ -469,9 +468,7 @@ class _CartPageState extends State<CartPage> {
                 if (isAvailable) ...[
                   InkWell(
                     onTap: () {
-                      context
-                          .read<CartBloc>()
-                          .add(CartItemRemoved(item.product.id));
+                      _decrementItem(item.product.id);
                     },
                     child: Container(
                       padding: const EdgeInsets.all(4),
@@ -507,8 +504,7 @@ class _CartPageState extends State<CartPage> {
                           item.quantity + 1) {
                         return;
                       }
-                      final product = Product.fromJson(item.product.toJson());
-                      context.read<CartBloc>().add(CartItemAdded(product));
+                      _incrementItem(item.product);
                     },
                     child: Container(
                       padding: const EdgeInsets.all(4),
@@ -530,9 +526,7 @@ class _CartPageState extends State<CartPage> {
                 if (!isAvailable)
                   InkWell(
                     onTap: () {
-                      context
-                          .read<CartBloc>()
-                          .add(CartItemDeleted(item.product.id));
+                      _removeCartItem(item.product.id);
                     },
                     child: Container(
                       padding: const EdgeInsets.all(8),
@@ -563,6 +557,34 @@ class _CartPageState extends State<CartPage> {
     );
   }
 
+  // Updated methods to handle cart operations with proper state updates
+  void _decrementItem(String productId) async {
+    // Decrement item first in the cart service
+
+    // Then update UI through the bloc
+    context.read<CartBloc>().add(CartItemRemoved(productId));
+    // Refresh the cart state to ensure consistency
+    // context.read<CartBloc>().add(CartStarted());
+  }
+
+  void _incrementItem(Product product) async {
+    // Increment item first in the cart service
+    await _cartService.addToCart(product);
+    // Then update UI through the bloc
+    context.read<CartBloc>().add(CartItemAdded(product));
+    // Refresh the cart state to ensure consistency
+    // context.read<CartBloc>().add(CartStarted());
+  }
+
+  void _removeCartItem(String productId) async {
+    // Remove item first from the cart service
+    await _cartService.removeFromCart(productId);
+    // Then update UI through the bloc
+    context.read<CartBloc>().add(CartItemDeleted(productId));
+    // Refresh the cart state to ensure consistency
+    // context.read<CartBloc>().add(CartStarted());
+  }
+
   void _showClearCartDialog(BuildContext context) {
     showDialog(
       context: context,
@@ -578,9 +600,14 @@ class _CartPageState extends State<CartPage> {
             child: const Text('CANCEL'),
           ),
           TextButton(
-            onPressed: () {
+            onPressed: () async {
               Navigator.of(context).pop();
+              // Clear cart in service first
+              await _cartService.clearCart();
+              // Then update UI through the bloc
               context.read<CartBloc>().add(CartCleared());
+              // Refresh the cart state to ensure consistency
+              context.read<CartBloc>().add(CartStarted());
             },
             style: TextButton.styleFrom(foregroundColor: Colors.red),
             child: const Text('CLEAR'),

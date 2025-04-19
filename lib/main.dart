@@ -2,8 +2,10 @@ import 'package:cart_veg/bloc/auth/authentication_bloc_bloc.dart';
 import 'package:cart_veg/bloc/cart/cart_bloc.dart';
 import 'package:cart_veg/bloc/categories/category_bloc.dart';
 import 'package:cart_veg/bloc/category_page/category_bloc.dart';
+import 'package:cart_veg/bloc/common/common_bloc.dart';
 import 'package:cart_veg/bloc/coupon/coupon_bloc.dart';
 import 'package:cart_veg/bloc/invoice/invoice_bloc.dart';
+import 'package:cart_veg/bloc/location/location_bloc.dart';
 import 'package:cart_veg/bloc/order/order_bloc.dart';
 import 'package:cart_veg/bloc/product/product_bloc.dart';
 import 'package:cart_veg/bloc/productIds/product_ids_bloc.dart';
@@ -58,6 +60,9 @@ class RootApp extends StatelessWidget {
         BlocProvider(create: (context) => UserOrderBloc()),
         BlocProvider(create: (context) => InvoiceBloc()),
         BlocProvider(create: (context) => CouponBloc()),
+        BlocProvider(create: (context) => LocationBloc()),
+        BlocProvider(create: (context) => CommonBloc()),
+
       ],
       child: MaterialApp.router(
         theme: ThemeData(

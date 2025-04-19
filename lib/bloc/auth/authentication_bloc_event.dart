@@ -8,6 +8,11 @@ class SendOtpToEmailEvent extends AuthenticationBlocEvent {
 
   SendOtpToEmailEvent(this.email);
 }
+class ResendOtpEvent extends AuthenticationBlocEvent {
+  final String email;
+
+  ResendOtpEvent(this.email);
+}
 
 class VerifyOtpEvent extends AuthenticationBlocEvent {
   final String otp;

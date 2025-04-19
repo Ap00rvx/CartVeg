@@ -26,6 +26,20 @@ class AuthenticationBlocBloc
         emit(AuthenticationBlocFailure("Failed to send OTP"));
       }
     });
+    on<ResendOtpEvent>((event,emit)async{
+      try {
+        final email = event.email;
+        emit(AuthenticationBlocLoading());
+        final response =
+            await locator.get<AuthenticationService>().resendOtp(email);
+        response.fold(
+          (errorMessage) => emit(AuthenticationBlocFailure(errorMessage)),
+          (successMessage) => emit(AuthenticationBlocSuccess(successMessage)),
+        );
+      } catch (err) {
+        emit(AuthenticationBlocFailure("Failed to resend OTP"));
+      }
+    }); 
     on<VerifyOtpEvent>((
       event,
       emit,

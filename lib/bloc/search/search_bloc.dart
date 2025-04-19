@@ -93,7 +93,7 @@ class SearchBloc extends Bloc<SearchEvent, SearchState> {
   void _searchProducts(SearchQueryChanged event, Emitter<SearchState> emit) {
     final query = event.query.toLowerCase();
     final filteredList = _searchProductList
-        .where((product) => product.name.toLowerCase().contains(query))
+        .where((product) => product.details.name.toLowerCase().contains(query))
         .toList();
     emit(SearchLoaded(filteredList));
   }

@@ -5,7 +5,7 @@ part of 'category_bloc.dart';
 
 
 abstract class CategoryState {
-  final List<String> categories;
+  final List<Category> categories;
   final List<Product> products;
   final bool isLoading;
   final bool hasMoreData;

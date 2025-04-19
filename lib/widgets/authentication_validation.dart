@@ -1,4 +1,5 @@
 import 'package:cart_veg/bloc/auth/authentication_bloc_bloc.dart';
+import 'package:cart_veg/bloc/common/common_bloc.dart';
 import 'package:cart_veg/config/router/route_names.dart';
 import 'package:cart_veg/widgets/snackbar.dart';
 import 'package:flutter/material.dart';
@@ -22,6 +23,7 @@ class _AuthenticationValidationState extends State<AuthenticationValidation>
   void initState() {
     super.initState();
     context.read<AuthenticationBlocBloc>().add(VerifyTokenEvent());
+    context.read<CommonBloc>().add(GeCategories());
 
     _controller = AnimationController(
       vsync: this,
@@ -42,41 +44,76 @@ class _AuthenticationValidationState extends State<AuthenticationValidation>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: BlocListener<AuthenticationBlocBloc, AuthenticationBlocState>(
-        listener: (context, state) {
-          if (state is VerifyTokenSuccess) {
-            if (state.response == true) {
-              Future.delayed(const Duration(seconds: 2), () {
-                context.go(Routes.home);
-              });
-            } else {
-              context.go(Routes.auth);
-            }
-          } else if (state is AuthenticationBlocFailure) {
-            showCustomSnackBar(context, state.errorMessage,
-                "Error Verifying User", Colors.red);
-            context.go(Routes.auth);
+      body: BlocBuilder<CommonBloc, CommonState>(
+        builder: (context, state) {
+          if (state is CommonLoading) {
+            return Center(
+              child: AnimatedBuilder(
+                animation: _animation,
+                builder: (context, child) {
+                  return Opacity(
+                    opacity: _animation.value,
+                    child: const Text(
+                      "CART VEG",
+                      style: TextStyle(
+                        fontSize: 40,
+                        fontStyle: FontStyle.italic,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.green,
+                      ),
+                    ),
+                  );
+                },
+              ),
+            );
           }
-        },
-        child: Center(
-          child: AnimatedBuilder(
-            animation: _animation,
-            builder: (context, child) {
-              return Opacity(
-                opacity: _animation.value,
-                child: const Text(
-                  "CART VEG",
-                  style: TextStyle(
-                    fontSize: 40,
-                    fontStyle: FontStyle.italic,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.green,
-                  ),
+          if (state is CommonFailed) {
+            return Center(
+              child: Text(
+                state.message,
+                style: const TextStyle(
+                  fontSize: 20,
+                  color: Colors.red,
                 ),
-              );
+              ),
+            );
+          }
+
+          return BlocListener<AuthenticationBlocBloc, AuthenticationBlocState>(
+            listener: (context, state) {
+              if (state is VerifyTokenSuccess) {
+                if (state.response == true) {
+                  context.go(Routes.home);
+                } else {
+                  context.go(Routes.auth);
+                }
+              } else if (state is AuthenticationBlocFailure) {
+                showCustomSnackBar(context, state.errorMessage,
+                    "Error Verifying User", Colors.red);
+                context.go(Routes.auth);
+              }
             },
-          ),
-        ),
+            child: Center(
+              child: AnimatedBuilder(
+                animation: _animation,
+                builder: (context, child) {
+                  return Opacity(
+                    opacity: _animation.value,
+                    child: const Text(
+                      "CART VEG",
+                      style: TextStyle(
+                        fontSize: 40,
+                        fontStyle: FontStyle.italic,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.green,
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
+          );
+        },
       ),
     );
   }

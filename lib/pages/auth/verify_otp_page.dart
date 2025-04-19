@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:cart_veg/bloc/auth/authentication_bloc_bloc.dart';
 import 'package:cart_veg/config/router/app_router.dart';
 import 'package:cart_veg/config/router/route_names.dart';
@@ -19,6 +20,61 @@ class OtpVerificationScreen extends StatefulWidget {
 
 class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
   final TextEditingController _otpController = TextEditingController();
+
+  // Timer variables
+  Timer? _timer;
+  int _secondsRemaining = 60; // 1 minute timer
+  bool _canResendOtp = false;
+
+  @override
+  void initState() {
+    super.initState();
+    // Start the timer as soon as the screen loads
+    startTimer();
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    _otpController.dispose();
+    super.dispose();
+  }
+
+  void startTimer() {
+    setState(() {
+      _secondsRemaining = 60;
+      _canResendOtp = false;
+    });
+
+    _timer?.cancel();
+    _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      setState(() {
+        if (_secondsRemaining > 0) {
+          _secondsRemaining--;
+        } else {
+          _canResendOtp = true;
+          _timer?.cancel();
+        }
+      });
+    });
+  }
+
+  void resendOtp() {
+    // Call your resend OTP event here
+    context.read<AuthenticationBlocBloc>().add(ResendOtpEvent(widget.email));
+
+    // Restart the timer
+    startTimer();
+
+    // Show feedback to the user
+    showCustomSnackBar(
+        context, "Success!", "OTP has been resent to your email", Colors.green);
+  }
+
+  String formatTime(int seconds) {
+    return '${seconds ~/ 60}:${(seconds % 60).toString().padLeft(2, '0')}';
+  }
+
   @override
   Widget build(BuildContext context) {
     final defaultPinTheme = PinTheme(
@@ -46,20 +102,28 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
       backgroundColor: Colors.white,
       body: BlocListener<AuthenticationBlocBloc, AuthenticationBlocState>(
         listener: (context, state) async {
+          if (state is AuthenticationBlocFailure) {
+            showCustomSnackBar(
+                context, "Error!", state.errorMessage, Colors.red);
+          }
+          if (state is AuthenticationBlocSuccess) {
+            showCustomSnackBar(
+                context, "Success!", state.successMessage, Colors.green);
+          }
           if (state is VerifyOtpSuccess) {
             showCustomSnackBar(
                 context, "Success!", "OTP Verified", Colors.green);
             final user = state.response.data.user;
             final token = state.response.data.token;
             await LocalStorageService().saveToken(token);
-            Future.delayed(const Duration(seconds: 2), () {
+            
               if (user.name == "" || user.phone == "") {
                 context.go(
                     '${Routes.userDetails}?email=${Uri.encodeComponent(widget.email)}');
               } else {
                 context.go(Routes.home);
               }
-            });
+            
           }
         },
         child: Padding(
@@ -95,13 +159,42 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
                 showCursor: false,
               ),
               const SizedBox(height: 10),
-              TextButton(
-                onPressed: () {},
-                child: const Text(
-                  "Didn't receive OTP? Resend OTP",
-                  style: TextStyle(
-                      color: Colors.green, fontWeight: FontWeight.bold),
-                ),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Text(
+                    "Didn't receive OTP?",
+                    style: TextStyle(color: Colors.grey),
+                  ),
+                  const SizedBox(width: 10),
+                  _canResendOtp
+                      ? TextButton(
+                          onPressed: resendOtp,
+                          child: const Text(
+                            "Resend OTP",
+                            style: TextStyle(
+                              color: Colors.green,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        )
+                      : Text(
+                          formatTime(_secondsRemaining),
+                          style: const TextStyle(
+                            color: Colors.green,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                  const SizedBox(width: 10),
+                  Visibility(
+                    visible: context.watch<AuthenticationBlocBloc>().state
+                        is AuthenticationBlocLoading,
+                    child: const CircularProgressIndicator(
+                      color: Colors.green,
+                      strokeWidth: 2,
+                    ),
+                  )
+                ],
               ),
               const SizedBox(height: 20),
               ElevatedButton(

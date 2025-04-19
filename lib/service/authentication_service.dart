@@ -28,6 +28,19 @@ class AuthenticationService {
     }
   }
 
+  Future<Either<String,String>> resendOtp(String email)async{ 
+    try {
+      final response = await _dio.post("/user/resend-otp", data: {"user_email": email});
+      if (response.statusCode == 200) {
+        return right("OTP sent to your email");
+      } else {
+        return left("Failed to send OTP");
+      }
+    } catch (err) {
+      return left("Failed to send OTP");
+    }
+  }
+
   Future<Either<String, VerifyOtpResponse>> verifyOTP(
       String otp, String email) async {
     try {
@@ -75,7 +88,7 @@ class AuthenticationService {
       print(response.data);
       if (response.statusCode == 200) {
         final json = response.data;
-        _user = User.fromJson(json["user"]);
+        _user = User.fromJson(json["data"]);
         return right(_user!);
       }
 

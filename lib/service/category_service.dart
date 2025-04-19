@@ -1,5 +1,9 @@
 import 'package:cart_veg/config/constant/constant.dart';
+import 'package:cart_veg/locator.dart';
+import 'package:cart_veg/model/categories_model.dart';
 import 'package:cart_veg/model/product_model.dart';
+import 'package:cart_veg/service/common_service.dart';
+import 'package:cart_veg/service/location_service.dart';
 import 'package:dio/dio.dart';
 import 'package:fpdart/fpdart.dart';
 
@@ -12,7 +16,7 @@ class CategoryService {
 
   final List<Product> _products = [];
   final List<String> _categories = [];
-  
+
   int currentPage = 1;
   int totalPages = 1;
   bool isLoading = false;
@@ -29,34 +33,38 @@ class CategoryService {
 
   bool get canLoadMore => hasMoreData && !isLoading;
 
-  Future<List<String>> getCategories() async {
+  Future<List<Category>> getCategories() async {
     try {
-      if (_categories.isNotEmpty) {
-        return _categories;
-      }
-      
-      final response = await _dio.get("common/categories");
-      if (response.statusCode == 200) {
-        _categories.addAll(List<String>.from(response.data["categories"]));
-        return _categories;
-      } else {
-        throw Exception("Failed to load categories");
-      }
+      final categories = await locator.get<CommonService>().getCategories();
+      return categories.fold(
+        (error) {
+          print("Error fetching categories: $error");
+          throw Exception("Failed to load categories");
+        },
+        (categoryList) {
+          _categories
+              .addAll(categoryList.categories.map((e) => e.name).toList());
+          return categoryList.categories;
+        },
+      );
     } catch (e) {
       print("Error fetching categories: $e");
       throw Exception("Failed to load categories");
     }
   }
 
-  Future<Either<String, List<Product>>> getProducts({String category = "Vegetable"}) async {
+  Future<Either<String, List<Product>>> getProducts(
+      {String category = "Vegetable"}) async {
     clearProducts();
     return loadMoreProducts(category: category);
   }
 
-  Future<Either<String, List<Product>>> loadMoreProducts({String category = "Vegetable"}) async {
+  Future<Either<String, List<Product>>> loadMoreProducts(
+      {String category = "Vegetable"}) async {
     if (isLoading || !hasMoreData) {
       return right(_products);
     }
+    final location = await locator.get<LocationService>().getCurrentLatLong();
 
     try {
       isLoading = true;
@@ -69,17 +77,22 @@ class CategoryService {
           'sort': 'price',
           'order': 'asc',
           'category': category,
+          'latitude': location["latitude"],
+          'longitude': location["longitude"],
         },
       );
+
+      print("Response ------> : ${response.data}");
 
       if (response.statusCode == 200) {
         final paginationData = response.data["data"]["pagination"];
         totalPages = paginationData["totalPages"];
         int fetchedPage = paginationData["currentPage"];
-
+        print("heloe ->>"+response.data["data"]["products"].toString());
         final newProducts = (response.data["data"]["products"] as List)
             .map((product) => Product.fromJson(product))
             .toList();
+        // print("New Products: $newProducts");
 
         if (newProducts.isNotEmpty) {
           _products.addAll(newProducts);
@@ -101,7 +114,8 @@ class CategoryService {
     }
   }
 
-  Future<Either<String, List<Product>>> refreshProducts({String category = "Vegetable"}) async {
+  Future<Either<String, List<Product>>> refreshProducts(
+      {String category = "Vegetable"}) async {
     clearProducts();
     return getProducts(category: category);
   }

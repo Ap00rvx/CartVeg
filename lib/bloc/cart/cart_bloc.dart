@@ -95,6 +95,7 @@ class CartBloc extends Bloc<CartEvent, CartState> {
   /// Fetch the cart and update the state
   Future<void> _fetchCart(Emitter<CartState> emit) async {
     final result = await _cartService.getCart();
+    print(result.toIOEither());
     result.fold(
       (error) => emit(CartError(error)),
       (cart) => emit(CartLoaded(cart)),
@@ -106,6 +107,7 @@ class CartBloc extends Bloc<CartEvent, CartState> {
       CartStarted event, Emitter<CartState> emit) async {
     emit(CartLoading());
     await _fetchCart(emit);
+    print("cart started end");
   }
 
   Future<void> _ondeleteCartItem(

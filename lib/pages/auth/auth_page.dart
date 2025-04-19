@@ -33,10 +33,9 @@ class _AuthPageState extends State<AuthPage> {
             );
 
             final email = _emailController.text;
-            Future.delayed(Duration(seconds: 2), () {
-              context.go(
-                  '${Routes.otpVerify}?email=${Uri.encodeComponent(email)}');
-            });
+
+            context
+                .go('${Routes.otpVerify}?email=${Uri.encodeComponent(email)}');
           }
           if (state is AuthenticationBlocFailure) {
             showCustomSnackBar(context, state.errorMessage,

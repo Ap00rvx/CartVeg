@@ -1,168 +1,249 @@
-// To use this model, you'll need to parse the JSON response
-// using the fromJson factory constructors
+// To parse this JSON data, do
+//
+//     final productResponse = productResponseFromJson(jsonString);
+
+import 'dart:convert';
+
+ProductResponse productResponseFromJson(String str) => ProductResponse.fromJson(json.decode(str));
+
+String productResponseToJson(ProductResponse data) => json.encode(data.toJson());
 
 class ProductResponse {
-  final int statusCode;
-  final String message;
-  final ProductData data;
+    bool success;
+    String message;
+    Data data;
 
-  ProductResponse({
-    required this.statusCode,
-    required this.message,
-    required this.data,
-  });
+    ProductResponse({
+        required this.success,
+        required this.message,
+        required this.data,
+    });
 
-  factory ProductResponse.fromJson(Map<String, dynamic> json) {
-    return ProductResponse(
-      statusCode: json['statusCode'],
-      message: json['message'],
-      data: ProductData.fromJson(json['data']),
+    factory ProductResponse.fromJson(Map<String, dynamic> json) => ProductResponse(
+        success: json["success"],
+        message: json["message"],
+        data: Data.fromJson(json["data"]),
     );
-  }
 
-  Map<String, dynamic> toJson() {
-    return {
-      'statusCode': statusCode,
-      'message': message,
-      'data': data.toJson(),
+    Map<String, dynamic> toJson() => {
+        "success": success,
+        "message": message,
+        "data": data.toJson(),
     };
-  }
 }
 
-class ProductData {
-  final List<Product> products;
-  final Pagination pagination;
+class Data {
+    Store store;
+    List<Product> products;
+    String deliveryTime;
+    Pagination pagination;
 
-  ProductData({
-    required this.products,
-    required this.pagination,
-  });
+    Data({
+        required this.store,
+        required this.products,
+        required this.deliveryTime,
+        required this.pagination,
+    });
 
-  factory ProductData.fromJson(Map<String, dynamic> json) {
-    return ProductData(
-      products: List<Product>.from(
-        json['products'].map((x) => Product.fromJson(x)),
-      ),
-      pagination: Pagination.fromJson(json['pagination']),
+    factory Data.fromJson(Map<String, dynamic> json) => Data(
+        store: Store.fromJson(json["store"]),
+        products: List<Product>.from(json["products"].map((x) => Product.fromJson(x))),
+        deliveryTime: json["deliveryTime"],
+        pagination: Pagination.fromJson(json["pagination"]),
     );
-  }
 
-  Map<String, dynamic> toJson() {
-    return {
-      'products': products.map((x) => x.toJson()).toList(),
-      'pagination': pagination.toJson(),
+    Map<String, dynamic> toJson() => {
+        "store": store.toJson(),
+        "products": List<dynamic>.from(products.map((x) => x.toJson())),
+        "deliveryTime": deliveryTime,
+        "pagination": pagination.toJson(),
     };
-  }
-}
-
-class Product {
-  final String id;
-  final String name;
-  final String description;
-  final double price;
-  final int stock;
-  final String category;
-  final String origin;
-  final String shelfLife;
-  final bool isAvailable;
-  final String image;
-  final int v;
-  final DateTime createdAt;
-  final DateTime updatedAt;
-  final int threshold;
-  final double actualPrice;
-  final String? unit;
-
-  Product({
-    required this.id,
-    required this.name,
-    required this.description,
-    required this.price,
-    required this.stock,
-    required this.category,
-    required this.origin,
-    required this.shelfLife,
-    required this.isAvailable,
-    required this.image,
-    required this.v,
-    required this.createdAt,
-    required this.updatedAt,
-    required this.threshold,
-    required this.actualPrice,
-    this.unit,
-  });
-
-  factory Product.fromJson(Map<String, dynamic> json) {
-    return Product(
-      id: json['_id'],
-      name: json['name'],
-      description: json['description'],
-      price: json['price'].toDouble(),
-      stock: json['stock'],
-      category: json['category'],
-      origin: json['origin'],
-      shelfLife: json['shelfLife'],
-      isAvailable: json['isAvailable'],
-      image: json['image'],
-      v: json['__v'],
-      createdAt: DateTime.parse(json['createdAt']),
-      updatedAt: DateTime.parse(json['updatedAt']),
-      threshold: json['threshold'],
-      actualPrice: json['actualPrice'].toDouble(),
-      unit: json['unit'],
-    );
-  }
-
-  Map<String, dynamic> toJson() {
-    return {
-      '_id': id,
-      'name': name,
-      'description': description,
-      'price': price,
-      'stock': stock,
-      'category': category,
-      'origin': origin,
-      'shelfLife': shelfLife,
-      'isAvailable': isAvailable,
-      'image': image,
-      '__v': v,
-      'createdAt': createdAt.toIso8601String(),
-      'updatedAt': updatedAt.toIso8601String(),
-      'threshold': threshold,
-      'actualPrice': actualPrice,
-      'unit': unit,
-    };
-  }
 }
 
 class Pagination {
-  final int currentPage;
-  final int totalPages;
-  final int totalProducts;
-  final int limit;
+    int currentPage;
+    int limit;
+    int totalProducts;
+    int totalPages;
 
-  Pagination({
-    required this.currentPage,
-    required this.totalPages,
-    required this.totalProducts,
-    required this.limit,
-  });
+    Pagination({
+        required this.currentPage,
+        required this.limit,
+        required this.totalProducts,
+        required this.totalPages,
+    });
 
-  factory Pagination.fromJson(Map<String, dynamic> json) {
-    return Pagination(
-      currentPage: json['currentPage'],
-      totalPages: json['totalPages'],
-      totalProducts: json['totalProducts'],
-      limit: json['limit'],
+    factory Pagination.fromJson(Map<String, dynamic> json) => Pagination(
+        currentPage: json["currentPage"],
+        limit: json["limit"],
+        totalProducts: json["totalProducts"],
+        totalPages: json["totalPages"],
     );
-  }
 
-  Map<String, dynamic> toJson() {
-    return {
-      'currentPage': currentPage,
-      'totalPages': totalPages,
-      'totalProducts': totalProducts,
-      'limit': limit,
+    Map<String, dynamic> toJson() => {
+        "currentPage": currentPage,
+        "limit": limit,
+        "totalProducts": totalProducts,
+        "totalPages": totalPages,
     };
-  }
+}
+
+class Product {
+    String productId;
+    int quantity;
+    int threshold;
+    bool availability;
+    Details details;
+
+    Product({
+        required this.productId,
+        required this.quantity,
+        required this.threshold,
+        required this.availability,
+        required this.details,
+    });
+
+    factory Product.fromJson(Map<String, dynamic> json) => Product(
+        productId: json["productId"],
+        quantity: json["quantity"],
+        threshold: json["threshold"],
+        availability: json["availability"],
+        details: Details.fromJson(json["details"]),
+    );
+
+    Map<String, dynamic> toJson() => {
+        "productId": productId,
+        "quantity": quantity,
+        "threshold": threshold,
+        "availability": availability,
+        "details": details.toJson(),
+    };
+}
+
+class Details {
+    String name;
+    String description;
+    String unit;
+    int price;
+    int actualPrice;
+    String category;
+    String origin;
+    String shelfLife;
+    String image;
+
+    Details({
+        required this.name,
+        required this.description,
+        required this.unit,
+        required this.price,
+        required this.actualPrice,
+        required this.category,
+        required this.origin,
+        required this.shelfLife,
+        required this.image,
+    });
+
+    factory Details.fromJson(Map<String, dynamic> json) => Details(
+        name: json["name"],
+        description: json["description"],
+        unit: json["unit"],
+        price: json["price"],
+        actualPrice: json["actualPrice"],
+        category: json["category"],
+        origin: json["origin"],
+        shelfLife: json["shelfLife"],
+        image: json["image"],
+    );
+
+    Map<String, dynamic> toJson() => {
+        "name": name,
+        "description": description,
+        "unit": unit,
+        "price": price,
+        "actualPrice": actualPrice,
+        "category": category,
+        "origin": origin,
+        "shelfLife": shelfLife,
+        "image": image,
+    };
+}
+
+class Store {
+    String id;
+    String name;
+    Address address;
+    String phone;
+    String email;
+    double latitude;
+    double longitude;
+    int radius;
+    String openingTime;
+
+    Store({
+        required this.id,
+        required this.name,
+        required this.address,
+        required this.phone,
+        required this.email,
+        required this.latitude,
+        required this.longitude,
+        required this.radius,
+        required this.openingTime,
+    });
+
+    factory Store.fromJson(Map<String, dynamic> json) => Store(
+        id: json["_id"],
+        name: json["name"],
+        address: Address.fromJson(json["address"]),
+        phone: json["phone"],
+        email: json["email"],
+        latitude: json["latitude"]?.toDouble(),
+        longitude: json["longitude"]?.toDouble(),
+        radius: json["radius"],
+        openingTime: json["openingTime"],
+    );
+
+    Map<String, dynamic> toJson() => {
+        "_id": id,
+        "name": name,
+        "address": address.toJson(),
+        "phone": phone,
+        "email": email,
+        "latitude": latitude,
+        "longitude": longitude,
+        "radius": radius,
+        "openingTime": openingTime,
+    };
+}
+
+class Address {
+    String flatno;
+    String street;
+    String city;
+    String state;
+    String pincode;
+
+    Address({
+        required this.flatno,
+        required this.street,
+        required this.city,
+        required this.state,
+        required this.pincode,
+    });
+
+    factory Address.fromJson(Map<String, dynamic> json) => Address(
+        flatno: json["flatno"],
+        street: json["street"],
+        city: json["city"],
+        state: json["state"],
+        pincode: json["pincode"],
+    );
+
+    Map<String, dynamic> toJson() => {
+        "flatno": flatno,
+        "street": street,
+        "city": city,
+        "state": state,
+        "pincode": pincode,
+    };
 }

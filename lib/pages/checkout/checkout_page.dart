@@ -88,10 +88,10 @@ class _CheckoutPageState extends State<CheckoutPage> {
     final currentProductIds =
         locator<CurrentProductService>().currentProducts.toList();
     availableItems = cart.items
-        .where((item) => currentProductIds.contains(item.product.id))
+        .where((item) => currentProductIds.contains(item.product.productId))
         .toList();
     unavailableItems = cart.items
-        .where((item) => !currentProductIds.contains(item.product.id))
+        .where((item) => !currentProductIds.contains(item.product.productId))
         .toList();
     subtotal = availableItems.fold(0.0, (sum, item) => sum + item.totalPrice);
   }
@@ -318,7 +318,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
                                         MainAxisAlignment.spaceBetween,
                                     children: [
                                       Text(
-                                          "${item.name} (${item.product.unit}) x ${item.quantity}",
+                                          "${item.name} (${item.product.details.unit}) x ${item.quantity}",
                                           style: const TextStyle(
                                               color: Colors.red)),
                                       Text('₹${item.totalPrice}',
@@ -356,7 +356,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
                                         MainAxisAlignment.spaceBetween,
                                     children: [
                                       Text(
-                                          "${item.name} (${item.product.unit}) x ${item.quantity}",
+                                          "${item.name} (${item.product.details.unit}) x ${item.quantity}",
                                           style: TextStyle(
                                               color: Colors.green.shade900)),
                                       Text('₹${item.totalPrice}',
@@ -700,7 +700,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
                               if (isCashOnDelivery) {
                                 final products = availableItems
                                     .map((item) => {
-                                          "productId": item.product.id,
+                                          "productId": item.product.productId,
                                           "quantity": item.quantity,
                                         })
                                     .toList();

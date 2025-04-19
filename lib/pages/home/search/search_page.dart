@@ -107,7 +107,7 @@ class _SearchPageState extends State<SearchPage> {
                       // Extract unique categories from products
                       // Assuming Product has a 'category' property (adjust if it's different)
                       List<String> categories = products
-                          .map((product) => product.category
+                          .map((product) => product.details.category
                               .toLowerCase()) // Change 'category' to your actual property name
                           .toSet() // Remove duplicates
                           .toList();
@@ -118,12 +118,12 @@ class _SearchPageState extends State<SearchPage> {
                       } else {
                         products = products
                             .where((p) =>
-                                p.category.toLowerCase() == selectedCategory)
+                                p.details.category.toLowerCase() == selectedCategory)
                             .toList();
                       }
-                      products.sort((a, b) => b.isAvailable == a.isAvailable
+                      products.sort((a, b) => b.availability == a.availability
                           ? 0
-                          : b.isAvailable
+                          : b.availability
                               ? 1
                               : -1);
 
@@ -300,12 +300,12 @@ class _SearchPageState extends State<SearchPage> {
 Widget _buildProductCard(Product product) {
   return GestureDetector(
     onTap: () {
-      print("Product tapped: ${product.id}");
+      print("Product tapped: ${product.productId}");
     },
     child: Container(
       margin: const EdgeInsets.symmetric(vertical: 8.0),
       child: ListTile(
-        enabled: product.isAvailable,
+        enabled: product.availability,
         tileColor: Colors.grey.shade50,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(10),
@@ -333,7 +333,7 @@ Widget _buildProductCard(Product product) {
                       const BorderRadius.horizontal(left: Radius.circular(10)),
                   child: ColorFiltered(
                     colorFilter: product
-                            .isAvailable // Assuming isAvailable is a boolean property
+                            .availability // Assuming isAvailable is a boolean property
                         ? const ColorFilter.mode(Colors.transparent,
                             BlendMode.color) // No filter when available
                         : const ColorFilter.matrix(<double>[
@@ -344,7 +344,7 @@ Widget _buildProductCard(Product product) {
                             0, 0, 0, 1, 0,
                           ]),
                     child: Image.network(
-                      product.image,
+                      product.details.image,
                       fit: BoxFit.cover,
                       width: double.infinity,
                     ),
@@ -352,7 +352,7 @@ Widget _buildProductCard(Product product) {
                 ),
               ),
               // Product details section
-              product.isAvailable == false
+              product.availability == false
                   ? Expanded(
                       child: Padding(
                         padding: const EdgeInsets.all(8.0),
@@ -360,12 +360,12 @@ Widget _buildProductCard(Product product) {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              product.name,
+                              product.details.name,
                               style: TextStyle(
                                   color: Colors.grey.shade600, fontSize: 12),
                             ),
                             Text(
-                              "₹" + product.price.toString(),
+                              "₹" + product.details.price.toString(),
                               style: TextStyle(
                                   color: Colors.grey.shade600, fontSize: 12),
                             ),
@@ -385,7 +385,7 @@ Widget _buildProductCard(Product product) {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              product.name,
+                              product.details.name,
                               style: const TextStyle(
                                   fontSize: 12, fontWeight: FontWeight.bold),
                             ),
@@ -393,9 +393,9 @@ Widget _buildProductCard(Product product) {
                             Row(
                               children: [
                                 Visibility(
-                                  visible: product.actualPrice != product.price,
+                                  visible: product.details.actualPrice != product.details.price,
                                   child: Text(
-                                    "₹${product.actualPrice}",
+                                    "₹${product.details.actualPrice}",
                                     style: const TextStyle(
                                         fontSize: 12,
                                         color: Colors.grey,
@@ -404,14 +404,14 @@ Widget _buildProductCard(Product product) {
                                 ),
                                 const SizedBox(width: 4),
                                 Text(
-                                  "₹${product.price}",
+                                  "₹${product.details.price}",
                                   style: TextStyle(
                                       fontSize: 14, color: Colors.green),
                                 ),
                               ],
                             ),
                             const SizedBox(height: 4),
-                            if (product.stock - product.threshold <= 5)
+                            if (product.quantity - product.threshold <= 5)
                               const Text(
                                 "Low Stock",
                                 style: TextStyle(
@@ -428,12 +428,12 @@ Widget _buildProductCard(Product product) {
                                     if (state is CartLoaded) {
                                       final inCart = state.cart.items.any(
                                           (item) =>
-                                              item.product.id == product.id);
+                                              item.product.productId == product.productId);
 
                                       if (inCart) {
                                         final cartItem = state.cart.items
                                             .firstWhere((item) =>
-                                                item.product.id == product.id);
+                                                item.product.productId == product.productId);
 
                                         return Row(
                                           mainAxisSize: MainAxisSize.min,
@@ -442,7 +442,7 @@ Widget _buildProductCard(Product product) {
                                               onTap: () {
                                                 context.read<CartBloc>().add(
                                                     CartItemRemoved(
-                                                        product.id));
+                                                        product.productId));
                                               },
                                               child: Container(
                                                 padding:
@@ -472,7 +472,7 @@ Widget _buildProductCard(Product product) {
                                             ),
                                             InkWell(
                                               onTap: () {
-                                                if (product.stock -
+                                                if (product.quantity -
                                                         product.threshold <
                                                     cartItem.quantity + 1) {
                                                   ScaffoldMessenger.of(context)
@@ -500,7 +500,7 @@ Widget _buildProductCard(Product product) {
                                                 padding:
                                                     const EdgeInsets.all(4),
                                                 decoration: BoxDecoration(
-                                                  color: product.stock -
+                                                  color: product.quantity -
                                                               product
                                                                   .threshold <
                                                           cartItem.quantity + 1
@@ -530,7 +530,7 @@ Widget _buildProductCard(Product product) {
                                             .showSnackBar(
                                           SnackBar(
                                             content: Text(
-                                              '${product.name} added to cart',
+                                              '${product.details.name} added to cart',
                                               style: const TextStyle(
                                                 fontSize: 16,
                                                 color: Colors.black,

@@ -22,6 +22,7 @@ class CartService {
     try {
       final savedCart = await _storage.read(key: CART_KEY);
       if (savedCart != null) {
+        print("cart products" + savedCart);
         final cart = cartResponseFromJson(savedCart);
         _cart = cart;
         _recalculateCartTotal(); // Recalculate totals based on available products
@@ -51,8 +52,8 @@ class CartService {
         _cart = cartResult.getRight().toNullable();
       }
 
-      final existingItemIndex =
-          _cart!.items.indexWhere((item) => item.product.id == product.id);
+      final existingItemIndex = _cart!.items
+          .indexWhere((item) => item.product.productId == product.productId);
       if (existingItemIndex >= 0) {
         _cart!.items[existingItemIndex].quantity += 1;
         _cart!.items[existingItemIndex].totalPrice =
@@ -61,12 +62,13 @@ class CartService {
       } else {
         _cart!.items.add(CartItem(
           product: product,
-          name: product.name,
-          price: double.parse(product.price.toString()).toInt(),
+          name: product.details.name,
+          price: double.parse(product.details.price.toString()).toInt(),
           quantity: 1,
-          image: product.image,
-          actualPrice: double.parse(product.actualPrice.toString()).toInt(),
-          totalPrice: double.parse(product.price.toString()).toInt(),
+          image: product.details.image,
+          actualPrice:
+              double.parse(product.details.actualPrice.toString()).toInt(),
+          totalPrice: double.parse(product.details.price.toString()).toInt(),
         ));
       }
 
@@ -88,8 +90,8 @@ class CartService {
         _cart = cartResult.getRight().toNullable();
       }
 
-      final existingItemIndex =
-          _cart!.items.indexWhere((item) => item.product.id == productId);
+      final existingItemIndex = _cart!.items
+          .indexWhere((item) => item.product.productId == productId);
       if (existingItemIndex >= 0) {
         if (_cart!.items[existingItemIndex].quantity > 1) {
           _cart!.items[existingItemIndex].quantity -= 1;
@@ -120,8 +122,8 @@ class CartService {
         _cart = cartResult.getRight().toNullable();
       }
 
-      final existingItemIndex =
-          _cart!.items.indexWhere((item) => item.product.id == productId);
+      final existingItemIndex = _cart!.items
+          .indexWhere((item) => item.product.productId == productId);
       if (existingItemIndex >= 0) {
         _cart!.items.removeAt(existingItemIndex);
         _recalculateCartTotal();
@@ -144,8 +146,8 @@ class CartService {
         _cart = cartResult.getRight().toNullable();
       }
 
-      final existingItemIndex =
-          _cart!.items.indexWhere((item) => item.product.id == productId);
+      final existingItemIndex = _cart!.items
+          .indexWhere((item) => item.product.productId == productId);
       if (existingItemIndex >= 0) {
         if (quantity <= 0) {
           _cart!.items.removeAt(existingItemIndex);
@@ -202,7 +204,7 @@ class CartService {
 
     // Only include available items in the totals
     for (var item in _cart!.items) {
-      if (currentProductIds.contains(item.product.id)) {
+      if (currentProductIds.contains(item.product.productId)) {
         totalItems += item.quantity;
         totalAmount += item.totalPrice;
       }

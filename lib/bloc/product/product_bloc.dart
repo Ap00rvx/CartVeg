@@ -1,6 +1,4 @@
-// product_bloc.dart
 import 'package:cart_veg/locator.dart';
-import 'package:cart_veg/pages/home/home_page.dart';
 import 'package:cart_veg/service/home_page_service.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:equatable/equatable.dart';
@@ -110,11 +108,12 @@ class ProductBloc extends Bloc<ProductEvent, ProductState> {
     emit(ProductLoading());
 
     try {
-      final result =
-          await homePageService.getProducts(category: event.category);
+      final result = await homePageService.getProducts(category: event.category);
 
       result.fold(
-        (error) => emit(ProductError(error)),
+        (error) {
+         emit (ProductError(error));
+        },
         (products) => emit(ProductsLoaded(
           products: products,
           hasMore: homePageService.hasMoreData,
@@ -140,11 +139,18 @@ class ProductBloc extends Bloc<ProductEvent, ProductState> {
       emit(currentState.copyWith(isLoadingMore: true));
 
       try {
-        final result =
-            await homePageService.loadMoreProducts(category: event.category);
+        final result = await homePageService.loadMoreProducts(category: event.category);
 
         result.fold(
-          (error) => emit(ProductError(error)),
+          (error) {
+            if (error.contains('Location services')) {
+              emit(const ProductError('Please enable location services to see nearby products.'));
+            } else if (error.contains('Location permission')) {
+              emit(const ProductError('Please grant location permissions to see nearby products.'));
+            } else {
+              emit(ProductError(error));
+            }
+          },
           (products) => emit(ProductsLoaded(
             products: products,
             hasMore: homePageService.hasMoreData,
@@ -162,12 +168,21 @@ class ProductBloc extends Bloc<ProductEvent, ProductState> {
     RefreshProducts event,
     Emitter<ProductState> emit,
   ) async {
+    emit(ProductLoading());
+
     try {
-      final result =
-          await homePageService.refreshProducts(category: event.category);
+      final result = await homePageService.refreshProducts(category: event.category);
 
       result.fold(
-        (error) => emit(ProductError(error)),
+        (error) {
+          if (error.contains('Location services')) {
+            emit(const ProductError('Please enable location services to see nearby products.'));
+          } else if (error.contains('Location permission')) {
+            emit(const ProductError('Please grant location permissions to see nearby products.'));
+          } else {
+            emit(ProductError(error));
+          }
+        },
         (products) => emit(ProductsLoaded(
           products: products,
           hasMore: homePageService.hasMoreData,

@@ -1,4 +1,6 @@
 import 'package:cart_veg/config/constant/constant.dart';
+import 'package:cart_veg/locator.dart';
+import 'package:cart_veg/service/location_service.dart';
 import 'package:dio/dio.dart';
 import 'package:fpdart/fpdart.dart';
 
@@ -13,11 +15,17 @@ class CurrentProductService {
 
   Future<Either<String, List<dynamic>>> getCurrentProducts() async {
     try {
+      final location = await locator.get<LocationService>().getCurrentLatLong();
      
-      final response = await _dio.get('product/ids');
+      final response = await _dio.get('product/list',queryParameters: {
+        "latitude": location["latitude"],
+        "longitude": location["longitude"],
+      });
 
-      final list = response.data as List;
-      currentProducts = list;
+      final list = response.data["data"]["products"] as List;
+      currentProducts = list.where((product) {
+        return product["availability"] == true; 
+      }).toList().map((e) => e["_id"]).toList();
       return currentProducts.isNotEmpty
           ? right(currentProducts)
           : left("No products found");

@@ -24,7 +24,7 @@ class _CartPageState extends State<CartPage> {
   var currentProducts = locator<HomePageService>()
       .products
       .map(
-        (product) => product.id,
+        (product) => product.productId,
       )
       .toList();
   final CartService _cartService = locator<CartService>();
@@ -75,6 +75,7 @@ class _CartPageState extends State<CartPage> {
             if (state is ProductIdsLoaded) {
               currentProducts =
                   state.productIds.map((e) => e.toString()).toList();
+              print("Current Product IDs in cart page : $currentProducts");
               return BlocBuilder<CartBloc, CartState>(
                 builder: (context, state) {
                   if (state is CartLoading) {
@@ -114,6 +115,7 @@ class _CartPageState extends State<CartPage> {
                       ),
                     );
                   }
+                  print(state);
                   return const Center(child: Text('Something went wrong'));
                 },
               );
@@ -239,10 +241,10 @@ class _CartPageState extends State<CartPage> {
   Widget _buildCartItems(BuildContext context, Cart cart) {
     // Separate available and unavailable items
     final availableItems = cart.items
-        .where((item) => currentProducts.contains(item.product.id))
+        .where((item) => currentProducts.contains(item.product.productId))
         .toList();
     final unavailableItems = cart.items
-        .where((item) => !currentProducts.contains(item.product.id))
+        .where((item) => !currentProducts.contains(item.product.productId))
         .toList();
 
     return Column(
@@ -277,7 +279,7 @@ class _CartPageState extends State<CartPage> {
                   child: ElevatedButton(
                     onPressed: () {
                       for (var item in unavailableItems) {
-                        _removeCartItem(item.product.id);
+                        _removeCartItem(item.product.productId);
                       }
                       // Refresh cart state after removing all unavailable items
                       context.read<CartBloc>().add(CartStarted());
@@ -414,7 +416,7 @@ class _CartPageState extends State<CartPage> {
           children: [
             const SizedBox(height: 4),
             Text(
-              '${item.product.unit}',
+              '${item.product.details.unit}',
               style: const TextStyle(
                 color: Colors.grey,
                 fontSize: 14,
@@ -422,10 +424,10 @@ class _CartPageState extends State<CartPage> {
             ),
             const SizedBox(height: 4),
             if (isAvailable &&
-                item.product.stock - item.product.threshold <= 5 &&
-                item.product.stock - item.product.threshold > 0)
+                item.product.quantity - item.product.threshold <= 5 &&
+                item.product.quantity - item.product.threshold > 0)
               Text(
-                'Only ${item.product.stock - item.product.threshold} left',
+                'Only ${item.product.quantity - item.product.threshold} left',
                 style: const TextStyle(
                   color: Colors.red,
                   fontSize: 14,
@@ -468,7 +470,7 @@ class _CartPageState extends State<CartPage> {
                 if (isAvailable) ...[
                   InkWell(
                     onTap: () {
-                      _decrementItem(item.product.id);
+                      _decrementItem(item.product.productId);
                     },
                     child: Container(
                       padding: const EdgeInsets.all(4),
@@ -500,7 +502,7 @@ class _CartPageState extends State<CartPage> {
                   ),
                   InkWell(
                     onTap: () {
-                      if (item.product.stock - item.product.threshold <
+                      if (item.product.quantity - item.product.threshold <
                           item.quantity + 1) {
                         return;
                       }
@@ -509,7 +511,7 @@ class _CartPageState extends State<CartPage> {
                     child: Container(
                       padding: const EdgeInsets.all(4),
                       decoration: BoxDecoration(
-                        color: item.product.stock - item.product.threshold <
+                        color: item.product.quantity - item.product.threshold <
                                 item.quantity + 1
                             ? Colors.grey
                             : Colors.green,
@@ -526,7 +528,7 @@ class _CartPageState extends State<CartPage> {
                 if (!isAvailable)
                   InkWell(
                     onTap: () {
-                      _removeCartItem(item.product.id);
+                      _removeCartItem(item.product.productId);
                     },
                     child: Container(
                       padding: const EdgeInsets.all(8),
@@ -569,7 +571,7 @@ class _CartPageState extends State<CartPage> {
 
   void _incrementItem(Product product) async {
     // Increment item first in the cart service
-    await _cartService.addToCart(product);
+    // await _cartService.addToCart(product);
     // Then update UI through the bloc
     context.read<CartBloc>().add(CartItemAdded(product));
     // Refresh the cart state to ensure consistency

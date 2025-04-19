@@ -1,5 +1,7 @@
 import 'package:cart_veg/bloc/auth/authentication_bloc_bloc.dart';
 import 'package:cart_veg/bloc/cart/cart_bloc.dart';
+import 'package:cart_veg/bloc/location/location_bloc.dart';
+import 'package:cart_veg/bloc/product/product_bloc.dart';
 import 'package:cart_veg/bloc/search/search_bloc.dart';
 import 'package:cart_veg/locator.dart';
 import 'package:cart_veg/pages/cart/cart_page.dart';
@@ -7,9 +9,11 @@ import 'package:cart_veg/pages/category/category_page.dart';
 import 'package:cart_veg/pages/home/widgets/home_content.dart';
 import 'package:badges/badges.dart' as badges;
 import 'package:cart_veg/pages/profile/profile_page.dart';
+import 'package:cart_veg/service/common_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:iconsax/iconsax.dart';
+import 'package:location/location.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -30,29 +34,53 @@ class _HomePageState extends State<HomePage> {
 
   late SearchBloc _searchBloc;
   late AuthenticationBlocBloc _authBloc;
+  late LocationBloc _locationBloc;
+
+  final categories = locator.get<CommonService>().getCategories();
 
   @override
   void initState() {
+    print("Init State Home Page");
     super.initState();
     _searchBloc = context.read<SearchBloc>();
+    // _productBloc = context.read<ProductBloc>();
     _authBloc = context.read<AuthenticationBlocBloc>();
+    _locationBloc = context.read<LocationBloc>();
     _authBloc.add(GetUserDetailsEvent());
     _searchBloc.add(FetchSearchProducts());
+    // Trigger location check only for HomeContent (index 0)
+
+    _locationBloc.add(const FetchLocation());
+    // _productBloc.add(LoadProducts(category: ""));
+    print(categories);
   }
 
   void _onItemTapped(int index) {
     setState(() {
       _selectedIndex = index;
+      // Trigger location check when switching to HomeContent
     });
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: IndexedStack(
-        index: _selectedIndex,
-        children: _pages,
-      ),
+      body: BlocBuilder<LocationBloc, LocationState>(builder: (context, state) {
+        if (state is LocationLoading) {
+          return const Center(child: CircularProgressIndicator());
+        } else if (state is LocationError) {
+          return Center(child: Text(state.message));
+        } else if (state is LocationLoaded) {
+          print(state.latitude);
+
+          return IndexedStack(
+            index: _selectedIndex,
+            children: _pages,
+          );
+        } else {
+          return const Center(child: Text('Unknown state'));
+        }
+      }),
       bottomNavigationBar: Container(
         decoration: BoxDecoration(
           boxShadow: [
@@ -142,8 +170,8 @@ class _HomePageState extends State<HomePage> {
           double totalAmount = 0.0;
           if (state is CartLoaded) {
             itemCount = state.cart.totalItems;
-            totalAmount = state.cart.items.fold(
-                0.0, (sum, item) => sum + item.totalPrice); // Calculate total
+            totalAmount = state.cart.items
+                .fold(0.0, (sum, item) => sum + item.totalPrice);
           }
           return (itemCount > 0 && _selectedIndex != 2 && _selectedIndex != 3)
               ? badges.Badge(
@@ -158,8 +186,7 @@ class _HomePageState extends State<HomePage> {
                     style: const TextStyle(color: Colors.white, fontSize: 12),
                   ),
                   child: Container(
-                    width: MediaQuery.of(context).size.width -
-                        32, // Full width with padding
+                    width: MediaQuery.of(context).size.width - 32,
                     height: 70,
                     margin: const EdgeInsets.symmetric(horizontal: 16),
                     child: Material(
@@ -169,8 +196,7 @@ class _HomePageState extends State<HomePage> {
                       child: InkWell(
                         onTap: () {
                           setState(() {
-                            _selectedIndex =
-                                2; // Navigate to CartPage (index 2)
+                            _selectedIndex = 2;
                           });
                         },
                         borderRadius: BorderRadius.circular(12),

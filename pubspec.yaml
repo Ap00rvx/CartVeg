@@ -60,7 +60,9 @@ dependencies:
   open_file: ^3.3.2
   intl: ^0.18.1
   share_plus: ^7.1.0
+  location: ^7.0.1
   palette_generator: ^0.3.3+6
+  carousel_slider: ^5.0.0
 
 dev_dependencies:
   flutter_test:

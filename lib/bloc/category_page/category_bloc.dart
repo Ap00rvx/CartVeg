@@ -1,5 +1,6 @@
 import 'package:bloc/bloc.dart';
 import 'package:cart_veg/locator.dart';
+import 'package:cart_veg/model/categories_model.dart';
 import 'package:cart_veg/model/product_model.dart';
 import 'package:cart_veg/service/category_service.dart';
 part 'category_event.dart';
@@ -24,8 +25,7 @@ class CategoryPageBloc extends Bloc<CategoryEvent, CategoryState> {
       ));
 
       final categories = await _categoryService.getCategories();
-      final productsResult =
-          await _categoryService.getProducts(category: "Vegetable");
+      final productsResult = await _categoryService.getProducts(category: "");
 
       productsResult.match(
         (error) => emit(CategoryError(
@@ -39,7 +39,7 @@ class CategoryPageBloc extends Bloc<CategoryEvent, CategoryState> {
           products: products,
           isLoading: false,
           hasMoreData: _categoryService.hasMoreData,
-          selectedCategory: "Vegetable",
+          selectedCategory: "All",
         )),
       );
     } catch (e) {

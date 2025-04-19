@@ -7,8 +7,10 @@ import "package:cart_veg/bloc/search/search_bloc.dart";
 import "package:cart_veg/service/authentication_service.dart";
 import "package:cart_veg/service/cart_service.dart";
 import "package:cart_veg/service/category_service.dart";
+import "package:cart_veg/service/common_service.dart";
 import "package:cart_veg/service/current_product_service.dart";
 import "package:cart_veg/service/home_page_service.dart";
+import "package:cart_veg/service/location_service.dart";
 import "package:cart_veg/service/search_service.dart";
 import "package:get_it/get_it.dart";
 
@@ -21,7 +23,10 @@ void setup() {
   locator.registerLazySingleton(() => CartService());
   locator.registerLazySingleton(() => CurrentProductService());
   locator.registerLazySingleton(() => CategoryService());
+  locator.registerLazySingleton(() => LocationService());
   locator.registerFactory(() => CategoryPageBloc());
+  locator.registerLazySingleton(() => CommonService()); 
+
   locator.registerFactory<ProductBloc>(() => ProductBloc(
         homePageService: locator<HomePageService>(),
       ));

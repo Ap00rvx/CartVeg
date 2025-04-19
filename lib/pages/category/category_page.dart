@@ -1,6 +1,7 @@
 import 'package:cart_veg/bloc/cart/cart_bloc.dart';
 import 'package:cart_veg/bloc/category_page/category_bloc.dart';
 import 'package:cart_veg/locator.dart';
+import 'package:cart_veg/model/categories_model.dart';
 import 'package:cart_veg/model/product_model.dart';
 import 'package:cart_veg/service/authentication_service.dart';
 import 'package:cart_veg/widgets/button_style.dart';
@@ -8,6 +9,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:lottie/lottie.dart';
 import 'package:shimmer/shimmer.dart';
+
+import '../../widgets/custom_chip.dart';
 
 class CategoryContent extends StatefulWidget {
   const CategoryContent({super.key});
@@ -88,7 +91,7 @@ class _CategoryContentState extends State<CategoryContent> {
         body: RefreshIndicator(
           onRefresh: () async {
             final currentState = _categoryPageBloc.state;
-            String currentCategory = "Vegetable";
+            String currentCategory = "";
             if (currentState is CategoryLoaded) {
               currentCategory = currentState.selectedCategory;
             }
@@ -109,6 +112,11 @@ class _CategoryContentState extends State<CategoryContent> {
   Widget _buildSidebar() {
     return BlocBuilder<CategoryPageBloc, CategoryState>(
       builder: (context, state) {
+        final allCategories = [
+          Category(id: "all", name: "All", image: ""),
+          ...state.categories
+        ];
+
         return Container(
           height: 60,
           color: Colors.white,
@@ -117,42 +125,36 @@ class _CategoryContentState extends State<CategoryContent> {
               ? const Center(child: CircularProgressIndicator())
               : ListView.separated(
                   scrollDirection: Axis.horizontal,
-                  itemCount: state.categories.length,
+                  itemCount: allCategories.length,
                   separatorBuilder: (context, index) =>
                       const SizedBox(width: 8.0),
                   itemBuilder: (context, index) {
-                    final category = state.categories[index];
-                    final isSelected = state is CategoryLoaded &&
-                        state.selectedCategory == category;
-                    return ChoiceChip(
-                      label: Text(category),
-                      selected: isSelected,
-                      onSelected: (selected) {
-                        if (selected) {
-                          context
-                              .read<CategoryPageBloc>()
-                              .add(RefreshProducts(category));
+                    final category = allCategories[index];
+                    bool isSelected = state is CategoryLoaded &&
+                        state.selectedCategory == category.name;
+                    if (state is CategoryLoaded &&
+                        state.selectedCategory == "") {
+                      isSelected = category.name == "All";
+                    }
+                    return CustomTabItem(
+                      label: category.name,
+                      isSelected: isSelected,
+                      onTap: () {
+                        if (!isSelected) {
+                          // Prevent redundant taps
+                          if (category.name == "All") {
+                            context
+                                .read<CategoryPageBloc>()
+                                .add(RefreshProducts(""));
+                          } else {
+                            context
+                                .read<CategoryPageBloc>()
+                                .add(RefreshProducts(category.name));
+                          }
                         }
                       },
-                      selectedColor: Colors.green.withOpacity(0.2),
-                      backgroundColor: Colors.grey[100],
-                      labelStyle: TextStyle(
-                        color: isSelected ? Colors.green : Colors.black,
-                        fontWeight:
-                            isSelected ? FontWeight.bold : FontWeight.normal,
-                      ),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(20),
-                        side: BorderSide(
-                          color: isSelected ? Colors.green : Colors.grey,
-                          width: 1,
-                        ),
-                      ),
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 12, vertical: 8),
                     );
-                  },
-                ),
+                  }),
         );
       },
     );
@@ -232,7 +234,7 @@ class _CategoryContentState extends State<CategoryContent> {
   Widget _buildProductCard(Product product) {
     return GestureDetector(
       onTap: () {
-        print("Product tapped: ${product.id}");
+        print("Product tapped: ${product.productId}");
       },
       child: Card(
         color: Colors.white,
@@ -246,7 +248,7 @@ class _CategoryContentState extends State<CategoryContent> {
                 borderRadius:
                     const BorderRadius.vertical(top: Radius.circular(10)),
                 child: Image.network(
-                  product.image,
+                  product.details.image,
                   fit: BoxFit.cover,
                   width: double.infinity,
                 ),
@@ -258,7 +260,7 @@ class _CategoryContentState extends State<CategoryContent> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    product.name,
+                    product.details.name,
                     style: const TextStyle(
                         fontSize: 12, fontWeight: FontWeight.bold),
                   ),
@@ -266,9 +268,10 @@ class _CategoryContentState extends State<CategoryContent> {
                   Row(
                     children: [
                       Visibility(
-                        visible: product.actualPrice != product.price,
+                        visible: product.details.actualPrice !=
+                            product.details.price,
                         child: Text(
-                          "₹${product.actualPrice}",
+                          "₹${product.details.actualPrice}",
                           style: const TextStyle(
                             fontSize: 12,
                             color: Colors.grey,
@@ -278,14 +281,14 @@ class _CategoryContentState extends State<CategoryContent> {
                       ),
                       const SizedBox(width: 4),
                       Text(
-                        "₹${product.price}",
+                        "₹${product.details.price}",
                         style:
                             const TextStyle(fontSize: 14, color: Colors.green),
                       ),
                     ],
                   ),
                   const SizedBox(height: 4),
-                  if (product.stock - product.threshold <= 5)
+                  if (product.quantity - product.threshold <= 5)
                     const Text(
                       "Low Stock",
                       style: TextStyle(
@@ -297,11 +300,12 @@ class _CategoryContentState extends State<CategoryContent> {
                   BlocBuilder<CartBloc, CartState>(
                     builder: (context, state) {
                       if (state is CartLoaded) {
-                        final inCart = state.cart.items
-                            .any((item) => item.product.id == product.id);
+                        final inCart = state.cart.items.any((item) =>
+                            item.product.productId == product.productId);
                         if (inCart) {
                           final cartItem = state.cart.items.firstWhere(
-                            (item) => item.product.id == product.id,
+                            (item) =>
+                                item.product.productId == product.productId,
                           );
                           return Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -310,7 +314,7 @@ class _CategoryContentState extends State<CategoryContent> {
                                 onTap: () {
                                   context
                                       .read<CartBloc>()
-                                      .add(CartItemRemoved(product.id));
+                                      .add(CartItemRemoved(product.productId));
                                 },
                                 child: Container(
                                   padding: const EdgeInsets.all(4),
@@ -332,7 +336,7 @@ class _CategoryContentState extends State<CategoryContent> {
                               ),
                               InkWell(
                                 onTap: () {
-                                  if (product.stock - product.threshold <
+                                  if (product.quantity - product.threshold <
                                       cartItem.quantity + 1) {
                                     ScaffoldMessenger.of(context).showSnackBar(
                                       SnackBar(
@@ -355,10 +359,11 @@ class _CategoryContentState extends State<CategoryContent> {
                                 child: Container(
                                   padding: const EdgeInsets.all(4),
                                   decoration: BoxDecoration(
-                                    color: product.stock - product.threshold <
-                                            cartItem.quantity + 1
-                                        ? Colors.grey
-                                        : Colors.green,
+                                    color:
+                                        product.quantity - product.threshold <
+                                                cartItem.quantity + 1
+                                            ? Colors.grey
+                                            : Colors.green,
                                     borderRadius: BorderRadius.circular(4),
                                   ),
                                   child: const Icon(
@@ -378,7 +383,7 @@ class _CategoryContentState extends State<CategoryContent> {
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(
                               content: Text(
-                                '${product.name} added to cart',
+                                '${product.details.name} added to cart',
                                 style: const TextStyle(
                                     fontSize: 16, color: Colors.black),
                               ),

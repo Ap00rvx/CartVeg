@@ -12,6 +12,7 @@ import "package:cart_veg/service/current_product_service.dart";
 import "package:cart_veg/service/home_page_service.dart";
 import "package:cart_veg/service/location_service.dart";
 import "package:cart_veg/service/search_service.dart";
+import "package:cart_veg/service/store_service.dart";
 import "package:get_it/get_it.dart";
 
 final locator = GetIt.instance;
@@ -26,6 +27,7 @@ void setup() {
   locator.registerLazySingleton(() => LocationService());
   locator.registerFactory(() => CategoryPageBloc());
   locator.registerLazySingleton(() => CommonService()); 
+  locator.registerLazySingleton(() => StoreService()); 
 
   locator.registerFactory<ProductBloc>(() => ProductBloc(
         homePageService: locator<HomePageService>(),

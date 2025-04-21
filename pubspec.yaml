@@ -63,6 +63,8 @@ dependencies:
   location: ^7.0.1
   palette_generator: ^0.3.3+6
   carousel_slider: ^5.0.0
+  fluentui_system_icons: ^1.1.273
+  cached_network_image: ^3.4.1
 
 dev_dependencies:
   flutter_test:

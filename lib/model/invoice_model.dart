@@ -17,6 +17,8 @@ class Invoice {
     String orderId;
     int totalAmount;
     String paymentStatus;
+    int shippingAmount;
+    int discount;
     DateTime orderDate;
     List<Item> items;
     String paymentMode;
@@ -31,6 +33,8 @@ class Invoice {
         required this.orderId,
         required this.totalAmount,
         required this.paymentStatus,
+        required this.shippingAmount,
+        required this.discount,
         required this.orderDate,
         required this.items,
         required this.paymentMode,
@@ -46,6 +50,8 @@ class Invoice {
         orderId: json["orderId"],
         totalAmount: json["totalAmount"],
         paymentStatus: json["paymentStatus"],
+        shippingAmount: json["shippingAmount"],
+        discount: json["discount"],
         orderDate: DateTime.parse(json["orderDate"]),
         items: List<Item>.from(json["items"].map((x) => Item.fromJson(x))),
         paymentMode: json["paymentMode"],
@@ -61,6 +67,8 @@ class Invoice {
         "orderId": orderId,
         "totalAmount": totalAmount,
         "paymentStatus": paymentStatus,
+        "shippingAmount": shippingAmount,
+        "discount": discount,
         "orderDate": orderDate.toIso8601String(),
         "items": List<dynamic>.from(items.map((x) => x.toJson())),
         "paymentMode": paymentMode,

@@ -19,6 +19,7 @@ class OrderBloc extends Bloc<OrderEvent, OrderState> {
           event.deliveryAddress,
           event.isCashOnDelivery,
           event.products,
+          event.storeId,
           event.shippingAmount,
           couponId: event.couponId, // Pass optional coupon fields
           couponCode: event.couponCode,

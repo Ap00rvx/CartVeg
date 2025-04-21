@@ -13,6 +13,7 @@ class CreateOrderEvent extends OrderEvent {
   final bool isCashOnDelivery;
   final List<Map<String, dynamic>> products;
   final int shippingAmount;
+  final String storeId; 
   final String? couponId; // Optional coupon fields
   final String? couponCode;
   final int? couponDiscount;
@@ -23,6 +24,8 @@ class CreateOrderEvent extends OrderEvent {
     required this.isCashOnDelivery,
     required this.products,
     required this.shippingAmount,
+    required this.storeId,
+
     this.couponId, // Optional
     this.couponCode, // Optional
     this.couponDiscount, // Optional

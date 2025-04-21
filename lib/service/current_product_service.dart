@@ -15,8 +15,12 @@ class CurrentProductService {
 
   Future<Either<String, List<dynamic>>> getCurrentProducts() async {
     try {
+
+      if(currentProducts.isNotEmpty) {
+        return right(currentProducts);
+      }
       final location = await locator.get<LocationService>().getCurrentLatLong();
-     
+      
       final response = await _dio.get('product/list',queryParameters: {
         "latitude": location["latitude"],
         "longitude": location["longitude"],

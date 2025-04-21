@@ -1,8 +1,10 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:carousel_slider/carousel_slider.dart';
 import 'package:cart_veg/bloc/auth/authentication_bloc_bloc.dart';
 import 'package:cart_veg/bloc/cart/cart_bloc.dart';
 import 'package:cart_veg/bloc/product/product_bloc.dart';
 import 'package:cart_veg/bloc/productIds/product_ids_bloc.dart';
+import 'package:cart_veg/bloc/store/store_bloc.dart';
 import 'package:cart_veg/locator.dart';
 import 'package:cart_veg/model/verify_otp_model.dart';
 import 'package:cart_veg/pages/home/widgets/search_bar.dart';
@@ -13,6 +15,7 @@ import 'package:cart_veg/service/location_service.dart';
 import 'package:cart_veg/widgets/button_style.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:iconsax/iconsax.dart';
 import 'package:shimmer/shimmer.dart';
 import 'package:palette_generator/palette_generator.dart';
 
@@ -48,6 +51,7 @@ class _HomeContentState extends State<HomeContent> {
     print(location);
     _productBloc = locator<ProductBloc>()
       ..add(const LoadProducts(category: ""));
+    // context.read<ProductBloc>().add(const LoadProducts(category: ""));
     _cartBloc = locator<CartBloc>()..add(CartStarted());
     _scrollController.addListener(_onScroll);
     _extractColorsFromFlyer();
@@ -124,54 +128,6 @@ class _HomeContentState extends State<HomeContent> {
           if (state is UserDetailsSuccess) {
             return Scaffold(
               backgroundColor: Colors.grey.shade50,
-              appBar: AppBar(
-                backgroundColor: _appBarColor,
-                toolbarHeight: 80,
-                elevation: 2,
-                title: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Welcome back,',
-                      style: TextStyle(
-                        fontSize: 16,
-                        color: _colorsLoaded
-                            ? _contrastingTextColor(_appBarColor)
-                            : Colors.green,
-                      ),
-                    ),
-                    Text(
-                      user?.name ?? 'Guest',
-                      style: TextStyle(
-                        fontSize: 22,
-                        fontWeight: FontWeight.bold,
-                        color: _colorsLoaded
-                            ? _contrastingTextColor(_appBarColor)
-                            : Colors.black,
-                      ),
-                    ),
-                  ],
-                ),
-                actions: [
-                  CircleAvatar(
-                    backgroundColor: _colorsLoaded
-                        ? _searchBarColor
-                        : Colors.green.withOpacity(0.4),
-                    radius: 20,
-                    child: Text(
-                      user?.name?.substring(0, 1).toUpperCase() ?? 'G',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        color: _colorsLoaded
-                            ? _contrastingTextColor(_searchBarColor)
-                            : Colors.white,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                ],
-              ),
               body: RefreshIndicator(
                 onRefresh: () async {
                   _productBloc.add(const LoadProducts(category: ""));
@@ -210,6 +166,48 @@ class _HomeContentState extends State<HomeContent> {
                         child: Column(
                           children: [
                             const SizedBox(height: 16),
+                            if (context.read<StoreBloc>().state is StoreLoaded)
+                              Padding(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 16.0),
+                                child: Row(
+                                  children: [
+                                    Icon(
+                                      Icons.speed,
+                                      size: 30,
+                                      color:
+                                          _contrastingTextColor(_appBarColor),
+                                    ),
+                                    const SizedBox(
+                                      width: 10,
+                                    ),
+                                    Text(
+                                      "Delivery in ",
+                                      style: TextStyle(
+                                          fontSize: 22,
+                                          fontStyle: FontStyle.italic,
+                                          fontWeight: FontWeight.w800,
+                                          color: _contrastingTextColor(
+                                              _appBarColor)),
+                                    ),
+                                    Text(
+                                      // (context.read<StoreBloc>().state
+                                      //         as StoreLoaded)
+                                      //     .nearestStoreResponse
+                                      //     .data
+                                      //     .deliveryTime,
+                                      "20 Minutes",
+                                      style: TextStyle(
+                                          fontSize: 22,
+                                          fontStyle: FontStyle.italic,
+                                          fontWeight: FontWeight.bold,
+                                          color: _contrastingTextColor(
+                                              _appBarColor)),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            const SizedBox(height: 16),
                             Padding(
                               padding:
                                   const EdgeInsets.symmetric(horizontal: 16),
@@ -237,10 +235,14 @@ class _HomeContentState extends State<HomeContent> {
                       // Category-based Product Sections
                       BlocBuilder<ProductBloc, ProductState>(
                         builder: (context, state) {
+                          print(state);
                           if (state is ProductInitial ||
                               state is ProductLoading) {
                             return _buildLoadingShimmer();
                           } else if (state is ProductsLoaded) {
+                            if (state.products.isEmpty) {
+                              _productBloc.add(LoadMoreProducts());
+                            }
                             return _buildCategorySections(state.products,
                                 state.hasMore, state.isLoadingMore);
                           } else if (state is ProductError) {
@@ -517,17 +519,18 @@ class _HomeContentState extends State<HomeContent> {
               child: ClipRRect(
                 borderRadius:
                     const BorderRadius.vertical(top: Radius.circular(15)),
-                child: Image.network(
-                  product.details.image,
+                child: CachedNetworkImage(
                   fit: BoxFit.cover,
+                  height: 120,
                   width: double.infinity,
-                  // height: 140,
-                  errorBuilder: (context, error, stackTrace) => Container(
-                    height: 120,
-                    color: Colors.grey.shade200,
-                    child: const Icon(Icons.image_not_supported,
-                        color: Colors.grey),
+                  placeholder: (context, url) => const Center(
+                    child: CircularProgressIndicator(
+                      color: Colors.green,
+                      strokeWidth: 1,
+                    ),
                   ),
+                  errorWidget: (context, url, error) => const Icon(Icons.error),
+                  imageUrl: product.details.image,
                 ),
               ),
             ),

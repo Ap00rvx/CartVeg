@@ -12,7 +12,7 @@ class AuthenticationService {
     receiveTimeout: Duration(seconds: 15),
   ));
 
-  late  User? _user;
+  late User? _user;
 
   Future<Either<String, String>> sendOTPToEmail(String email) async {
     try {
@@ -28,9 +28,10 @@ class AuthenticationService {
     }
   }
 
-  Future<Either<String,String>> resendOtp(String email)async{ 
+  Future<Either<String, String>> resendOtp(String email) async {
     try {
-      final response = await _dio.post("/user/resend-otp", data: {"user_email": email});
+      final response =
+          await _dio.post("/user/resend-otp", data: {"user_email": email});
       if (response.statusCode == 200) {
         return right("OTP sent to your email");
       } else {
@@ -102,7 +103,7 @@ class AuthenticationService {
   Future<bool> isTokenValid() async {
     try {
       final token = await LocalStorageService().getToken();
-      print(token);
+      print("TOKEN" + token);
       if (token.isEmpty) {
         return false;
       }

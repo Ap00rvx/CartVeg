@@ -75,7 +75,7 @@ class _CartPageState extends State<CartPage> {
             if (state is ProductIdsLoaded) {
               currentProducts =
                   state.productIds.map((e) => e.toString()).toList();
-              print("Current Product IDs in cart page : $currentProducts");
+
               return BlocBuilder<CartBloc, CartState>(
                 builder: (context, state) {
                   if (state is CartLoading) {

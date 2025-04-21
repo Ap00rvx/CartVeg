@@ -26,7 +26,7 @@ class AuthenticationBlocBloc
         emit(AuthenticationBlocFailure("Failed to send OTP"));
       }
     });
-    on<ResendOtpEvent>((event,emit)async{
+    on<ResendOtpEvent>((event, emit) async {
       try {
         final email = event.email;
         emit(AuthenticationBlocLoading());
@@ -39,7 +39,7 @@ class AuthenticationBlocBloc
       } catch (err) {
         emit(AuthenticationBlocFailure("Failed to resend OTP"));
       }
-    }); 
+    });
     on<VerifyOtpEvent>((
       event,
       emit,
@@ -80,11 +80,13 @@ class AuthenticationBlocBloc
         emit(AuthenticationBlocLoading());
         final response =
             await locator.get<AuthenticationService>().isTokenValid();
+        print(response.toString() + " repsone");
         if (response) {
           await locator.get<AuthenticationService>().getUserDetails();
           await locator.get<CurrentProductService>().getCurrentProducts();
           emit(VerifyTokenSuccess(true));
         } else {
+          print("Token not verified");
           emit(VerifyTokenSuccess(false));
         }
       } catch (err) {

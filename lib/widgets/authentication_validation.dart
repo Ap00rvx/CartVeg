@@ -1,4 +1,5 @@
 import 'package:cart_veg/bloc/auth/authentication_bloc_bloc.dart';
+import 'package:cart_veg/bloc/cart/cart_bloc.dart';
 import 'package:cart_veg/bloc/common/common_bloc.dart';
 import 'package:cart_veg/config/router/route_names.dart';
 import 'package:cart_veg/widgets/snackbar.dart';
@@ -22,7 +23,7 @@ class _AuthenticationValidationState extends State<AuthenticationValidation>
   @override
   void initState() {
     super.initState();
-    context.read<AuthenticationBlocBloc>().add(VerifyTokenEvent());
+    // context.read<AuthenticationBlocBloc>().add(VerifyTokenEvent());
     context.read<CommonBloc>().add(GeCategories());
 
     _controller = AnimationController(
@@ -33,6 +34,7 @@ class _AuthenticationValidationState extends State<AuthenticationValidation>
     _animation = Tween<double>(begin: 0.5, end: 1.0).animate(
       CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
     );
+    // context.read<CartBloc>().add(CartStarted());
   }
 
   @override
@@ -53,15 +55,12 @@ class _AuthenticationValidationState extends State<AuthenticationValidation>
                 builder: (context, child) {
                   return Opacity(
                     opacity: _animation.value,
-                    child: const Text(
-                      "CART VEG",
-                      style: TextStyle(
-                        fontSize: 40,
-                        fontStyle: FontStyle.italic,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.green,
-                      ),
-                    ),
+                    child: Image.asset(
+                      "assets/images/logo.png",
+                      height: 200,
+                      width: 200,
+                      fit: BoxFit.contain,
+                    )
                   );
                 },
               ),
@@ -78,41 +77,48 @@ class _AuthenticationValidationState extends State<AuthenticationValidation>
               ),
             );
           }
-
-          return BlocListener<AuthenticationBlocBloc, AuthenticationBlocState>(
-            listener: (context, state) {
-              if (state is VerifyTokenSuccess) {
-                if (state.response == true) {
-                  context.go(Routes.home);
-                } else {
+          if (state is CommonLoaded) {
+            context.read<AuthenticationBlocBloc>().add(VerifyTokenEvent());
+            return BlocListener<AuthenticationBlocBloc,
+                AuthenticationBlocState>(
+              listener: (context, authState) {
+                print(authState);
+                if (authState is VerifyTokenSuccess) {
+                  print(state);
+                  if (authState.response == true) {
+                    context.read<AuthenticationBlocBloc>().add(GetUserDetailsEvent());
+                    print("goiing to home ");
+                    context.go(Routes.home);
+                  } else {
+                    print("goiing to auth ");
+                    context.go(Routes.auth);
+                  }
+                } else if (authState is AuthenticationBlocFailure) {
+                  showCustomSnackBar(context, authState.errorMessage,
+                      "Error Verifying User", Colors.red);
                   context.go(Routes.auth);
                 }
-              } else if (state is AuthenticationBlocFailure) {
-                showCustomSnackBar(context, state.errorMessage,
-                    "Error Verifying User", Colors.red);
-                context.go(Routes.auth);
-              }
-            },
-            child: Center(
-              child: AnimatedBuilder(
-                animation: _animation,
-                builder: (context, child) {
-                  return Opacity(
-                    opacity: _animation.value,
-                    child: const Text(
-                      "CART VEG",
-                      style: TextStyle(
-                        fontSize: 40,
-                        fontStyle: FontStyle.italic,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.green,
+              },
+              child: Center(
+                child: AnimatedBuilder(
+                  animation: _animation,
+                  builder: (context, child) {
+                    return Opacity(
+                      opacity: _animation.value,
+                      child: Image.asset(
+                        "assets/images/logo.png",
+                        height: 200,
+                        width: 200,
+                        fit: BoxFit.contain,
                       ),
-                    ),
-                  );
-                },
+                    );
+                  },
+                ),
               ),
-            ),
-          );
+            );
+          } else {
+            return SizedBox.shrink();
+          }
         },
       ),
     );

@@ -6,10 +6,12 @@ import 'package:cart_veg/bloc/common/common_bloc.dart';
 import 'package:cart_veg/bloc/coupon/coupon_bloc.dart';
 import 'package:cart_veg/bloc/invoice/invoice_bloc.dart';
 import 'package:cart_veg/bloc/location/location_bloc.dart';
+import 'package:cart_veg/bloc/navigation/navigation_bloc.dart';
 import 'package:cart_veg/bloc/order/order_bloc.dart';
 import 'package:cart_veg/bloc/product/product_bloc.dart';
 import 'package:cart_veg/bloc/productIds/product_ids_bloc.dart';
 import 'package:cart_veg/bloc/search/search_bloc.dart';
+import 'package:cart_veg/bloc/store/store_bloc.dart';
 import 'package:cart_veg/bloc/user_order/user_order_bloc.dart';
 import 'package:cart_veg/config/router/app_router.dart';
 import 'package:cart_veg/firebase_options.dart';
@@ -62,6 +64,8 @@ class RootApp extends StatelessWidget {
         BlocProvider(create: (context) => CouponBloc()),
         BlocProvider(create: (context) => LocationBloc()),
         BlocProvider(create: (context) => CommonBloc()),
+        BlocProvider(create: (context) => NavigationBloc()),
+        BlocProvider(create: (context) => StoreBloc()),
 
       ],
       child: MaterialApp.router(

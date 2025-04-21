@@ -54,40 +54,6 @@ class _CategoryContentState extends State<CategoryContent> {
       value: _categoryPageBloc,
       child: Scaffold(
         backgroundColor: Colors.white,
-        appBar: AppBar(
-          // ... (AppBar code remains unchanged)
-          backgroundColor: Colors.white,
-          toolbarHeight: 80,
-          title: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text(
-                'Welcome back,',
-                style: TextStyle(fontSize: 16, color: Colors.green),
-              ),
-              Text(
-                user?.name ?? 'Guest',
-                style: const TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.black,
-                ),
-              ),
-            ],
-          ),
-          actions: [
-            CircleAvatar(
-              backgroundColor: Colors.green.withOpacity(0.4),
-              radius: 23,
-              child: Text(
-                user?.name?.substring(0, 1).toUpperCase() ?? 'G',
-                style: const TextStyle(color: Colors.white),
-              ),
-            ),
-            const SizedBox(width: 10),
-          ],
-        ),
         body: RefreshIndicator(
           onRefresh: () async {
             final currentState = _categoryPageBloc.state;
@@ -119,10 +85,33 @@ class _CategoryContentState extends State<CategoryContent> {
 
         return Container(
           height: 60,
+          margin: const EdgeInsets.only(top: 20),
           color: Colors.white,
           padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
           child: state.categories.isEmpty
-              ? const Center(child: CircularProgressIndicator())
+              ? Center(
+                  child: ListView.separated(
+                    scrollDirection: Axis.horizontal,
+                    itemCount: 5,
+                    separatorBuilder: (context, index) => const SizedBox(
+                      width: 8.0,
+                    ),
+                    itemBuilder: (context, index) {
+                      return Shimmer.fromColors(
+                        baseColor: Colors.grey.shade100,
+                        highlightColor: Colors.white,
+                        child: Container(
+                          width: 100,
+                          height: 10,
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                )
               : ListView.separated(
                   scrollDirection: Axis.horizontal,
                   itemCount: allCategories.length,

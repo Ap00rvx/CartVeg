@@ -36,13 +36,9 @@ class CouponService {
     };
     print(data);
     try {
-      final response = await _dio.post("coupon/apply", data: data);
-      print(response.data);
-      if (response.statusCode == 200) {
-        return right(response.data["message"]);
-      } else {
-        return left("Failed to apply coupon");
-      }
+     
+        return right("Coupon applied successfully");
+      
     } on DioException catch (e) {
       print("Error in applyCoupon: ${e.response}");
       return left("Failed to apply coupon");
@@ -52,16 +48,12 @@ class CouponService {
   Future<Either<String, String>> removeCoupon(
       String couponCode, String userId) async {
     try {
-      final response = await _dio.post("coupon/remove", data: {
-        "couponCode": couponCode,
-        "userId": userId,
-      });
-      print(response.data["message"]);
-      if (response.statusCode == 200) {
-        return right(response.data["message"]);
-      } else {
-        return left("Failed to remove coupon");
-      }
+      // final response = await _dio.post("coupon/remove", data: {
+      //   "couponCode": couponCode,
+      //   "userId": userId,
+    
+        return right("Coupon removed successfully");
+      
     } catch (e) {
       print("Error in removeCoupon: $e");
       return left("Failed to remove coupon");

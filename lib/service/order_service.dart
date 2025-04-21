@@ -2,6 +2,7 @@ import 'package:cart_veg/config/constant/constant.dart';
 import 'package:cart_veg/locator.dart';
 import 'package:cart_veg/model/create_order_model.dart';
 import 'package:cart_veg/service/authentication_service.dart';
+import 'package:cart_veg/service/location_service.dart';
 import 'package:dio/dio.dart';
 import 'package:fpdart/fpdart.dart';
 
@@ -16,14 +17,17 @@ class OrderService {
     Map<String, dynamic> deliveryAddress,
     bool isCashOnDelivery,
     List<Map<String, dynamic>> products,
+    String storeId,
     int shippingAmount, {
     String? couponId,
     String? couponCode,
     int? couponDiscount,
   }) async {
     final userId = locator.get<AuthenticationService>().user!.id;
-    
-
+    final latitude = locator.get<LocationService>().latitude;
+    final longitude = locator.get<LocationService>().longitude;
+    deliveryAddress["latitude"] = latitude;
+    deliveryAddress["longitude"] = longitude;
     try {
       // Base data for the request
       final data = {
@@ -32,6 +36,7 @@ class OrderService {
         "products": products,
         "shippingAmount": shippingAmount,
         "isCashOnDelivery": isCashOnDelivery,
+        "storeId": storeId,
         "deliveryAddress": deliveryAddress,
       };
 
@@ -54,10 +59,12 @@ class OrderService {
         return right(CreateOrderResponse.fromJson(json));
       } else {
         return left(
-            "Failed to create order: Unexpected status code ${response.statusCode}");
+            "Failed to create order: Unexpected status code ${response.data}");
       }
-    } catch (err) {
+      // return left("Failed to create order: Unexpected status code ${201}");
+    } on DioException catch (err) {
       print("Error in handleCreateOrder: $err");
+      print("Error in repsone: ${err.response?.data}");
       return left("Failed to create order: ${err.toString()}");
     }
   }

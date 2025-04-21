@@ -15,6 +15,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:go_router/go_router.dart';
 import 'package:iconsax/iconsax.dart';
+import 'package:palette_generator/palette_generator.dart';
 import 'package:shimmer/shimmer.dart';
 
 class ProfilePage extends StatefulWidget {
@@ -26,6 +27,9 @@ class ProfilePage extends StatefulWidget {
 
 class _ProfilePageState extends State<ProfilePage> {
   final user = locator.get<AuthenticationService>().user!;
+  Color _appBarColor = Colors.green.shade100; // Default color
+  Color _searchBarColor = Colors.green.shade300; // Default color
+  bool _colorsLoaded = false;
   final String CART_KEY = "user_cart_ffa";
   bool _showAllOrders = false; // Track whether to show all orders
 
@@ -91,17 +95,13 @@ class _ProfilePageState extends State<ProfilePage> {
   void initState() {
     super.initState();
     context.read<UserOrderBloc>().add(FetchUserOrders(user.id));
+    _extractColorsFromFlyer();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
-      appBar: AppBar(
-        backgroundColor: Colors.green,
-        foregroundColor: Colors.white,
-        elevation: 0,
-      ),
       body: RefreshIndicator(
         onRefresh: () async {
           // Also refresh orders when pulling down
@@ -179,9 +179,9 @@ class _ProfilePageState extends State<ProfilePage> {
                     width: double.infinity,
                     padding: const EdgeInsets.symmetric(
                         horizontal: 20, vertical: 30),
-                    decoration: const BoxDecoration(
-                      color: Colors.green,
-                      borderRadius: BorderRadius.only(
+                    decoration: BoxDecoration(
+                      color: _appBarColor,
+                      borderRadius: const BorderRadius.only(
                         bottomLeft: Radius.circular(20),
                         bottomRight: Radius.circular(20),
                       ),
@@ -402,6 +402,14 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 
+  Color _contrastingTextColor(Color backgroundColor) {
+    double luminance = (0.299 * backgroundColor.red +
+            0.587 * backgroundColor.green +
+            0.114 * backgroundColor.blue) /
+        255;
+    return luminance > 0.5 ? Colors.black : Colors.white;
+  }
+
   Widget _buildOrderItem(UserOrder order) {
     // Format date to a readable format
     final orderDate =
@@ -431,7 +439,7 @@ class _ProfilePageState extends State<ProfilePage> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  "Total Amount: ₹${order.totalAmount}",
+                  "Total Amount: ₹${order.totalAmount + order.shippingAmount}",
                   style: const TextStyle(fontWeight: FontWeight.bold),
                 ),
                 Text("Items: ${order.totalItems}"),
@@ -494,6 +502,33 @@ class _ProfilePageState extends State<ProfilePage> {
         ],
       ),
     );
+  }
+
+  Future<void> _extractColorsFromFlyer() async {
+    try {
+      final PaletteGenerator paletteGenerator =
+          await PaletteGenerator.fromImageProvider(
+        const AssetImage("assets/images/flyer.jpg"),
+        size: const Size(200, 100),
+        maximumColorCount: 20,
+      );
+
+      final Color appBarColor = paletteGenerator.dominantColor?.color ??
+          paletteGenerator.vibrantColor?.color ??
+          Colors.green.shade100;
+
+      final Color searchBarColor = paletteGenerator.lightVibrantColor?.color ??
+          paletteGenerator.mutedColor?.color ??
+          appBarColor.withOpacity(0.7);
+
+      setState(() {
+        _appBarColor = appBarColor;
+        _searchBarColor = searchBarColor;
+        _colorsLoaded = true;
+      });
+    } catch (e) {
+      print("Error extracting colors: $e");
+    }
   }
 
   Color _getStatusColor(String status) {

@@ -13,9 +13,10 @@ class UserOrderService {
 
   Future<Either<String, List<UserOrder>>> getUserOrders(String userId) async {
     try {
-      final response = await _dio.get("order/userOrders?userId=$userId");
+      final response = await _dio.get("order/user-orders/$userId");
       if (response.statusCode == 200) {
-        final json = response.data["data"];
+        final json = response.data["orders"];
+        
         return right((json as List).map((e) => UserOrder.fromJson(e)).toList());
       } else {
         return left("Failed to load user orders");

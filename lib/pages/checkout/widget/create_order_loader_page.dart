@@ -48,11 +48,10 @@ class _CreateOrderLoaderPageState extends State<CreateOrderLoaderPage> {
         body: BlocListener<OrderBloc, OrderState>(
           listener: (context, state) {
             if (state is OrderCreated || state is OrderError) {
-              _startTimerAndPop(); 
+              _startTimerAndPop();
               // Start timer only when order is created or errored
-               context.read<UserOrderBloc>().add(FetchUserOrders(user.id));
+              context.read<UserOrderBloc>().add(FetchUserOrders(user.id));
             }
-            
           },
           child: BlocBuilder<OrderBloc, OrderState>(
             builder: (context, state) {
@@ -103,7 +102,7 @@ class _CreateOrderLoaderPageState extends State<CreateOrderLoaderPage> {
                         ),
                       ),
                       Text(
-                        "Order ID: ${state.response.data.orderId}",
+                        "Order ID: ${state.response.data.order.orderId}",
                         style: const TextStyle(
                           fontSize: 18,
                           color: Colors.grey,
